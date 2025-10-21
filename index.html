@@ -1,0 +1,1951 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Control de Personal de Reemplazo</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: var(--secondary-color);
+            border-bottom: 2px solid var(--light-color);
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+        
+        .btn-warning:hover {
+            background-color: #d35400;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-info {
+            background-color: #17a2b8;
+        }
+        
+        .btn-info:hover {
+            background-color: #138496;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: var(--light-color);
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .assignment-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .alert {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .data-management {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .sync-status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--success-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .day-section {
+            margin-bottom: 30px;
+        }
+        
+        .day-title {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .area-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+        
+        .area-ct { background-color: #e8f5e8; color: #2e7d32; }
+        .area-matematica { background-color: #e3f2fd; color: #1565c0; }
+        .area-comunicacion { background-color: #f3e5f5; color: #7b1fa2; }
+        .area-ccss { background-color: #fff3e0; color: #ef6c00; }
+        
+        .assignment-day-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .day-selector-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background-color: var(--light-color);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .day-selector-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .real-time-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success-color);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .real-time-notification.show {
+            opacity: 1;
+        }
+        
+        .management-day-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .management-day-btn {
+            padding: 8px 15px;
+            text-align: center;
+            background-color: var(--light-color);
+            border-radius: 4px;
+            cursor: pointer;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .management-day-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .labor-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .labor-option {
+            padding: 8px 12px;
+            background-color: var(--light-color);
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        .labor-option:hover {
+            background-color: #d6dbdf;
+        }
+        
+        .labor-option.active {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .sede-item {
+            padding: 5px 10px;
+            margin: 2px;
+            background-color: #e8f4fd;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .date-range-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: end;
+        }
+        
+        .date-filters {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: end;
+        }
+        
+        .date-summary {
+            background-color: var(--light-color);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+        }
+        
+        .change-log {
+            margin-top: 20px;
+        }
+        
+        .change-item {
+            padding: 10px 15px;
+            border-left: 4px solid var(--primary-color);
+            background-color: #f8f9fa;
+            margin-bottom: 10px;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .change-time {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .change-details {
+            margin-top: 5px;
+        }
+        
+        .internal-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .internal-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .internal-tab.active {
+            border-bottom: 3px solid var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .internal-tab-content {
+            display: none;
+        }
+        
+        .internal-tab-content.active {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .assignment-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .data-management {
+                flex-direction: column;
+            }
+            
+            .sync-status {
+                position: static;
+                margin-top: 10px;
+            }
+            
+            .assignment-day-selector {
+                flex-direction: column;
+            }
+            
+            .real-time-notification {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+            }
+            
+            .management-day-selector {
+                flex-direction: column;
+            }
+            
+            .labor-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .date-range-selector, .date-filters {
+                grid-template-columns: 1fr;
+            }
+            
+            .summary-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .internal-tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sistema de Control de Personal de Reemplazo</h1>
+            <p class="subtitle">Gestión de disponibilidad y asignación diaria - Vista Completa por Fechas</p>
+            <div class="sync-status" id="sync-status">Datos Locales</div>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="assignment">Asignaciones</div>
+            <div class="tab" data-tab="teachers">Lista de Docentes</div>
+            <div class="tab" data-tab="data">Gestión de Datos</div>
+        </div>
+        
+        <!-- Pestaña de Asignaciones -->
+        <div class="tab-content active" id="assignment-tab">
+            <div class="card">
+                <h2 class="card-title">Asignar Labor</h2>
+                
+                <div class="assignment-day-selector">
+                    <div class="day-selector-btn active" data-day="lunes">Lunes</div>
+                    <div class="day-selector-btn" data-day="martes">Martes</div>
+                    <div class="day-selector-btn" data-day="miercoles">Miércoles</div>
+                    <div class="day-selector-btn" data-day="jueves">Jueves</div>
+                    <div class="day-selector-btn" data-day="viernes">Viernes</div>
+                </div>
+                
+                <form id="assignment-form" class="assignment-form">
+                    <div class="form-group">
+                        <label for="assignment-date">Fecha</label>
+                        <input type="date" id="assignment-date" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="assignment-employee">Docente</label>
+                        <select id="assignment-employee" required>
+                            <option value="">Seleccionar docente</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="assignment-shift">Turno</label>
+                        <select id="assignment-shift" required>
+                            <option value="">Seleccionar turno</option>
+                            <option value="mañana">Mañana</option>
+                            <option value="tarde">Tarde</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="assignment-labor">Labor a Realizar</label>
+                        <input type="text" id="assignment-labor" list="labor-suggestions" required>
+                        <datalist id="labor-suggestions">
+                            <option value="Reemplazo en Lince">
+                            <option value="Reemplazo en Aula">
+                            <option value="Coordinación Académica">
+                            <option value="Capacitación">
+                            <option value="Supervisión">
+                            <option value="Evaluación">
+                            <option value="Planificación">
+                            <option value="Reunión de Área">
+                            <option value="Apoyo Pedagógico">
+                            <option value="Tutoría">
+                        </datalist>
+                        
+                        
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="assignment-location">Ubicación/Sede</label>
+                        <select id="assignment-location" required>
+                            <option value="">Seleccionar sede</option>
+                            <option value="AREQUIPA">AREQUIPA</option>
+                            <option value="BARRANCO">BARRANCO</option>
+                            <option value="BELISARIO">BELISARIO</option>
+                            <option value="BELLAVISTA">BELLAVISTA</option>
+                            <option value="BELLIDO">BELLIDO</option>
+                            <option value="CAJAMARCA">CAJAMARCA</option>
+                            <option value="CALCA">CALCA</option>
+                            <option value="CAMPOY">CAMPOY</option>
+                            <option value="CANTA CALLAO">CANTA CALLAO</option>
+                            <option value="CARABAYLLO">CARABAYLLO</option>
+                            <option value="CHACLACAYO">CHACLACAYO</option>
+                            <option value="CHORRILLOS">CHORRILLOS</option>
+                            <option value="CIPRESES">CIPRESES</option>
+                            <option value="CUBA">CUBA</option>
+                            <option value="EL AGUSTINO">EL AGUSTINO</option>
+                            <option value="EL RETABLO">EL RETABLO</option>
+                            <option value="EL ROSARIO">EL ROSARIO</option>
+                            <option value="ELIO">ELIO</option>
+                            <option value="HUAYCAN">HUAYCAN</option>
+                            <option value="HUANCAYO">HUANCAYO</option>
+                            <option value="HUARAL">HUARAL</option>
+                            <option value="ICA">ICA</option>
+                            <option value="INGENIEROS">INGENIEROS</option>
+                            <option value="JAVIER PRADO">JAVIER PRADO</option>
+                            <option value="JULIACA">JULIACA</option>
+                            <option value="LA VICTORIA">LA VICTORIA</option>
+                            <option value="LAS PALMERAS">LAS PALMERAS</option>
+                            <option value="LINCE">LINCE</option>
+                            <option value="LOS COCALENOS">LOS COCALENOS</option>
+                            <option value="LURIN">LURIN</option>
+                            <option value="MIGUEL IGLESIAS">MIGUEL IGLESIAS</option>
+                            <option value="MONTERRICO">MONTERRICO</option>
+                            <option value="MONTESSORI">MONTESSORI</option>
+                            <option value="NARANJAL">NARANJAL</option>
+                            <option value="PISCO">PISCO</option>
+                            <option value="PUCALLPA">PUCALLPA</option>
+                            <option value="PUEBLO LIBRE">PUEBLO LIBRE</option>
+                            <option value="PUENTE PIEDRA">PUENTE PIEDRA</option>
+                            <option value="QUILCA">QUILCA</option>
+                            <option value="SALAMANCA">SALAMANCA</option>
+                            <option value="SAN CARLOS">SAN CARLOS</option>
+                            <option value="SAN LUIS">SAN LUIS</option>
+                            <option value="SAN MIGUEL">SAN MIGUEL</option>
+                            <option value="SANTA ANITA">SANTA ANITA</option>
+                            <option value="SORIA">SORIA</option>
+                            <option value="TARMA">TARMA</option>
+                            <option value="VENTANILLA">VENTANILLA</option>
+                            <option value="VILLA EL SALVADOR">VILLA EL SALVADOR</option>
+                            <option value="VILLA SOL">VILLA SOL</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn-success">Asignar Labor</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title">Asignaciones del Día <span id="assignments-count-badge" class="area-badge area-ct">0</span></h2>
+                <div class="form-group">
+                    <label for="assignments-date">Seleccionar Fecha</label>
+                    <input type="date" id="assignments-date">
+                </div>
+                <div id="assignments-loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>Cargando asignaciones...</p>
+                </div>
+                <table id="assignments-table">
+                    <thead>
+                        <tr>
+                            <th>Docente</th>
+                            <th>Turno</th>
+                            <th>Labor</th>
+                            <th>Ubicación</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assignments-list">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Pestaña de Lista de Docentes -->
+        <div class="tab-content" id="teachers-tab">
+            <div class="card">
+                <h2 class="card-title">Lista de Docentes por Día</h2>
+                <p>Esta es la lista pre-cargada de docentes disponibles para reemplazos organizada por día de la semana.</p>
+                
+                <div class="day-section">
+                    <div class="day-title">LUNES</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Docente</th>
+                                <th>Área</th>
+                                <th>Plana</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monday-teachers">
+                            <!-- Datos pre-cargados para lunes -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="day-section">
+                    <div class="day-title">MARTES</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Docente</th>
+                                <th>Área</th>
+                                <th>Plana</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tuesday-teachers">
+                            <!-- Datos pre-cargados para martes -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="day-section">
+                    <div class="day-title">MIÉRCOLES</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Docente</th>
+                                <th>Área</th>
+                                <th>Plana</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wednesday-teachers">
+                            <!-- Datos pre-cargados para miércoles -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="day-section">
+                    <div class="day-title">JUEVES</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Docente</th>
+                                <th>Área</th>
+                                <th>Plana</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="thursday-teachers">
+                            <!-- Datos pre-cargados para jueves -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="day-section">
+                    <div class="day-title">VIERNES</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Docente</th>
+                                <th>Área</th>
+                                <th>Plana</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="friday-teachers">
+                            <!-- Datos pre-cargados para viernes -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pestaña de Gestión de Datos -->
+        <div class="tab-content" id="data-tab">
+            <div class="internal-tabs">
+                <div class="internal-tab active" data-internal-tab="dates">Vista por Fechas</div>
+                <div class="internal-tab" data-internal-tab="weekday">Vista por Día de Semana</div>
+                <div class="internal-tab" data-internal-tab="changes">Historial de Cambios</div>
+            </div>
+            
+            <!-- Vista por Fechas -->
+            <div class="internal-tab-content active" id="dates-content">
+                <div class="card">
+                    <h2 class="card-title">Vista por Fechas</h2>
+                    <p>Visualice todas las asignaciones organizadas por fechas específicas.</p>
+                    
+                    <div class="date-filters">
+                        <div class="form-group">
+                            <label for="date-filter">Filtrar por fecha:</label>
+                            <input type="date" id="date-filter">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="sede-filter">Filtrar por sede:</label>
+                            <select id="sede-filter">
+                                <option value="">Todas las sedes</option>
+                                <option value="AREQUIPA">AREQUIPA</option>
+                                <option value="BARRANCO">BARRANCO</option>
+                                <option value="BELISARIO">BELISARIO</option>
+                                <option value="BELLAVISTA">BELLAVISTA</option>
+                                <option value="BELLIDO">BELLIDO</option>
+                                <option value="CAJAMARCA">CAJAMARCA</option>
+                                <option value="CALCA">CALCA</option>
+                                <option value="CAMPOY">CAMPOY</option>
+                                <option value="CANTA CALLAO">CANTA CALLAO</option>
+                                <option value="CARABAYLLO">CARABAYLLO</option>
+                                <option value="CHACLACAYO">CHACLACAYO</option>
+                                <option value="CHORRILLOS">CHORRILLOS</option>
+                                <option value="CIPRESES">CIPRESES</option>
+                                <option value="CUBA">CUBA</option>
+                                <option value="EL AGUSTINO">EL AGUSTINO</option>
+                                <option value="EL RETABLO">EL RETABLO</option>
+                                <option value="EL ROSARIO">EL ROSARIO</option>
+                                <option value="ELIO">ELIO</option>
+                                <option value="HUAYCAN">HUAYCAN</option>
+                                <option value="HUANCAYO">HUANCAYO</option>
+                                <option value="HUARAL">HUARAL</option>
+                                <option value="ICA">ICA</option>
+                                <option value="INGENIEROS">INGENIEROS</option>
+                                <option value="JAVIER PRADO">JAVIER PRADO</option>
+                                <option value="JULIACA">JULIACA</option>
+                                <option value="LA VICTORIA">LA VICTORIA</option>
+                                <option value="LAS PALMERAS">LAS PALMERAS</option>
+                                <option value="LINCE">LINCE</option>
+                                <option value="LOS COCALENOS">LOS COCALENOS</option>
+                                <option value="LURIN">LURIN</option>
+                                <option value="MIGUEL IGLESIAS">MIGUEL IGLESIAS</option>
+                                <option value="MONTERRICO">MONTERRICO</option>
+                                <option value="MONTESSORI">MONTESSORI</option>
+                                <option value="NARANJAL">NARANJAL</option>
+                                <option value="PISCO">PISCO</option>
+                                <option value="PUCALLPA">PUCALLPA</option>
+                                <option value="PUEBLO LIBRE">PUEBLO LIBRE</option>
+                                <option value="PUENTE PIEDRA">PUENTE PIEDRA</option>
+                                <option value="QUILCA">QUILCA</option>
+                                <option value="SALAMANCA">SALAMANCA</option>
+                                <option value="SAN CARLOS">SAN CARLOS</option>
+                                <option value="SAN LUIS">SAN LUIS</option>
+                                <option value="SAN MIGUEL">SAN MIGUEL</option>
+                                <option value="SANTA ANITA">SANTA ANITA</option>
+                                <option value="SORIA">SORIA</option>
+                                <option value="TARMA">TARMA</option>
+                                <option value="VENTANILLA">VENTANILLA</option>
+                                <option value="VILLA EL SALVADOR">VILLA EL SALVADOR</option>
+                                <option value="VILLA SOL">VILLA SOL</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <button id="apply-filters" class="btn-info">Aplicar Filtros</button>
+                            <button id="clear-filters" class="btn-warning">Limpiar Filtros</button>
+                        </div>
+                    </div>
+                    
+                    <div id="date-summary" class="date-summary">
+                        <h3>Resumen de Asignaciones</h3>
+                        <div class="summary-stats">
+                            <div class="stat-card">
+                                <div class="stat-value" id="total-assignments">0</div>
+                                <div class="stat-label">Total Asignaciones</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="morning-assignments">0</div>
+                                <div class="stat-label">Turno Mañana</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="afternoon-assignments">0</div>
+                                <div class="stat-label">Turno Tarde</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="unique-sedes">0</div>
+                                <div class="stat-label">Sedes Diferentes</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <table id="dates-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Día</th>
+                                <th>Docente</th>
+                                <th>Área</th>
+                                <th>Turno</th>
+                                <th>Labor</th>
+                                <th>Ubicación</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dates-list">
+                            <!-- Los datos se cargarán dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Vista por Día de Semana -->
+            <div class="internal-tab-content" id="weekday-content">
+                <div class="card">
+                    <h2 class="card-title">Vista por Día de la Semana</h2>
+                    <p>Visualice todas las actividades asignadas al personal organizadas por día de la semana.</p>
+                    
+                    <div class="management-day-selector">
+                        <div class="management-day-btn active" data-day="lunes">Lunes</div>
+                        <div class="management-day-btn" data-day="martes">Martes</div>
+                        <div class="management-day-btn" data-day="miercoles">Miércoles</div>
+                        <div class="management-day-btn" data-day="jueves">Jueves</div>
+                        <div class="management-day-btn" data-day="viernes">Viernes</div>
+                    </div>
+                    
+                    <div id="management-day-content">
+                        <!-- Contenido dinámico por día -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Historial de Cambios -->
+            <div class="internal-tab-content" id="changes-content">
+                <div class="card">
+                    <h2 class="card-title">Historial de Cambios</h2>
+                    <p>Registro de todas las modificaciones realizadas en el sistema.</p>
+                    
+                    <div class="date-range-selector">
+                        <div class="form-group">
+                            <label for="start-date">Fecha de inicio:</label>
+                            <input type="date" id="start-date">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="end-date">Fecha de fin:</label>
+                            <input type="date" id="end-date">
+                        </div>
+                        
+                        <div>
+                            <button id="load-changes" class="btn-info">Cargar Cambios</button>
+                        </div>
+                    </div>
+                    
+                    <div class="change-log" id="change-log">
+                        <!-- Los cambios se cargarán dinámicamente -->
+                    </div>
+                </div>
+            </div>
+          <!--   
+            <div class="card">
+                <h2 class="card-title">Gestión de Datos del Sistema</h2>
+                <p>Utilice las siguientes opciones para gestionar los datos del sistema y sincronizar entre diferentes navegadores.</p>
+                
+                <div class="data-management">
+                    <button id="export-data" class="btn-info">Exportar Todos los Datos</button>
+                    <button id="import-data" class="btn-warning">Importar Datos</button>
+                    <button id="clear-data" class="btn-danger">Limpiar Todos los Datos</button>
+                </div>
+                
+                <div class="form-group">
+                    <label for="import-file">Importar desde archivo:</label>
+                    <input type="file" id="import-file" accept=".json">
+                </div>
+                
+                <div class="form-group">
+                    <label for="data-preview">Vista Previa de Datos:</label>
+                    <textarea id="data-preview" rows="10" readonly></textarea>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">Estadísticas del Sistema</h3>
+                    <div id="stats-container">
+                        <p><strong>Total de asignaciones:</strong> <span id="assignments-count">0</span></p>
+                        <p><strong>Última actualización:</strong> <span id="last-update">Nunca</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>-->
+
+    <!-- Notificación de actualización automática -->
+    <div class="real-time-notification" id="realtime-notification">
+        Asignaciones actualizadas automáticamente
+    </div>
+
+    <script>
+        // Datos pre-cargados de docentes
+        const PRECARGADOS_DOCENTES = {
+            lunes: [
+                { docente: "ESPINOZA SAAVEDRA ROOSSELLA MIRELLA", area: "CT", plana: "BIOLOGÍA" },
+                { docente: "MERINO RODRIGUEZ JORGE ALEXANDER", area: "CT", plana: "BIOLOGÍA" },
+                { docente: "TABOADA SAAVEDRA ANDY MIGUEL", area: "MATEMATICA", plana: "RAZ.MATEMÁTICO" },
+                { docente: "NAVARRO MEDINA ROSA VICTORIA", area: "CT", plana: "QUIMICA" },
+                { docente: "ORTIZ HERRERA JULIA EVELYN", area: "COMUNICACIÓN", plana: "LENGUAJE" },
+                { docente: "SALINAS AGAPITO VICTOR", area: "COMUNICACIÓN", plana: "LENGUAJE" },
+                { docente: "LOPEZ ANGELES GLEDIS JASMINE", area: "MATEMATICA", plana: "ARITMETICA" },
+                { docente: "PAREDES ESPINOZA JORGE", area: "CCSS", plana: "HP" },
+                { docente: "LUJAN IZARRA WENDY GENESIS YOSELYN", area: "CT", plana: "BIOLOGIA" },
+                { docente: "AROTINCO ROJAS ALEJANDRO", area: "CT", plana: "FISICA" },
+                { docente: "TOMAS PONCE FELICIANO", area: "MATEMATICA", plana: "ARITMETICA" },
+                { docente: "CORDOVA CASACHAGUA ARTURO", area: "MATEMATICA", plana: "ALGEBRA" },
+                { docente: "NUÑEZ VILCA GONZALO", area: "CT", plana: "QUIMICA" },
+                { docente: "VALDIVIA GALARZA GRACE", area: "COMUNICACIÓN", plana: "INGLES" }
+            ],
+            martes: [
+                { docente: "PURIZACA LUCANO GIOVANNA CECILIA", area: "COMUNICACIÓN", plana: "INGLÉS" },
+                { docente: "SAUÑE CHIROQUE YANINA", area: "COMUNICACIÓN", plana: "LENGUAJE" },
+                { docente: "PINTO MIRANDA JHONATAN RONALD", area: "COMUNICACIÓN", plana: "INGLES" },
+                { docente: "CABALLERO PONCE JORGE ALBERTO", area: "CCSS", plana: "CIVICA" },
+                { docente: "NUÑEZ VILCA GONZALO", area: "CT", plana: "QUIMICA" },
+                { docente: "OLIVOS RODRIGUEZ ANDRIAN", area: "MATEMATICA", plana: "ALGEBRA" },
+                { docente: "ROJAS CRUZ MOISES", area: "MATEMATICA", plana: "TRIGONOMETRIA" },
+                { docente: "PICCONE DIAZ MARIO", area: "COMUNICACIÓN", plana: "LITERATURA" },
+                { docente: "HINOJOSA VILCAPOMA JACQUELINE MARGOTH", area: "CT", plana: "QUIMICA" }
+            ],
+            miercoles: [
+                { docente: "PURIZACA LUCANO GIOVANNA CECILIA", area: "COMUNICACIÓN", plana: "INGLÉS" },
+                { docente: "SOTO HIDALGO NANCY NELLY", area: "COMUNICACIÓN", plana: "INGLÉS" },
+                { docente: "RAMIREZ RAMOS EDITH MARITZA", area: "CT", plana: "QUIMICA" },
+                { docente: "NAVIDAD TENA ELEAZAR DELMI", area: "COMUNICACIÓN", plana: "LENGUAJE" },
+                { docente: "NAVARRO MEDINA ROSA VICTORIA", area: "CT", plana: "QUIMICA" },
+                { docente: "LAZARO VELASQUEZ SESTIVENZON DE JESUS", area: "MATEMATICA", plana: "RAZ. MAT" },
+                { docente: "SAUÑE CHIROQUE YANINA", area: "COMUNICACIÓN", plana: "LENGUAJE" },
+                { docente: "PINTO MIRANDA JHONATAN RONALD", area: "COMUNICACIÓN", plana: "INGLES" },
+                { docente: "VELIZ ACOSTA MIRELLA", area: "COMUNICACIÓN", plana: "INGLES" },
+                { docente: "NUÑEZ VILCA GONZALO", area: "CT", plana: "QUIMICA" },
+                { docente: "OLIVOS RODRIGUEZ ANDRIAN", area: "MATEMATICA", plana: "ALGEBRA" }
+            ],
+            jueves: [
+                { docente: "BARBOZA DIETZ RONALD ANTONIO", area: "COMUNICACIÓN", plana: "INGLÉS" },
+                { docente: "OBESSO ROJAS VICTOR JUAN", area: "CT", plana: "BIOLOGÍA" },
+                { docente: "PURIZACA LUCANO GIOVANNA CECILIA", area: "COMUNICACIÓN", plana: "INGLÉS" },
+                { docente: "LAZARO VELASQUEZ SESTIVENZON DE JESUS", area: "MATEMATICA", plana: "RAZ. MAT" },
+                { docente: "CONDORI CONDORI CARMEN ROSA", area: "CT", plana: "BIOLOGIA" },
+                { docente: "DAMIAN GUEVARA BRAHYAN DUVAL", area: "MATEMATICA", plana: "ALGEBRA" },
+                { docente: "SANDOVAL DENEGRI LINDER", area: "CCSS", plana: "HU" },
+                { docente: "PINTO MIRANDA JHONATAN RONALD", area: "COMUNICACIÓN", plana: "INGLES" },
+                { docente: "SALINAS AGAPITO VICTOR", area: "COMUNICACIÓN", plana: "LENGUAJE" },
+                { docente: "PORTAL RUEDA MIUEL", area: "MATEMATICA", plana: "RAZ. MAT" },
+                { docente: "NUÑEZ VILCA GONZALO", area: "CT", plana: "QUIMICA" },
+                { docente: "OLIVOS RODRIGUEZ ANDRIAN", area: "MATEMATICA", plana: "ALGEBRA" },
+                { docente: "PICCONE DIAZ MARIO", area: "COMUNICACIÓN", plana: "LITERATURA" }
+            ],
+            viernes: [
+                { docente: "MATHEY VILLAVICENCIO JAIME DANTE", area: "CT", plana: "QUÍMICA" },
+                { docente: "GODOY ARIAS LUIS ENRIQUE", area: "MATEMATICA", plana: "TRIGONOMETRÍA" },
+                { docente: "PEREYRA AGUILAR NEYDI", area: "CCSS", plana: "GEOGRAFIA" },
+                { docente: "LAZARO VELASQUEZ SESTIVENZON DE JESUS", area: "MATEMATICA", plana: "RAZ. MAT" },
+                { docente: "CONDORI CONDORI CARMEN ROSA", area: "CT", plana: "BIOLOGIA" },
+                { docente: "SAUÑE CHIROQUE YANINA", area: "COMUNICACIÓN", plana: "LENGUAJE" },
+                { docente: "PINTO MIRANDA JHONATAN RONALD", area: "COMUNICACIÓN", plana: "INGLES" },
+                { docente: "SALINAS AGAPITO VICTOR", area: "COMUNICACIÓN", plana: "LENGUAJE" },
+                { docente: "MONZON ITURRIZAGA MARIO RICARDO", area: "MATEMATICA", plana: "ALGEBRA" },
+                { docente: "GARCIA VARGAS JACKELINE", area: "COMUNICACIÓN", plana: "LITERATURA" },
+                { docente: "NUÑEZ VILCA GONZALO", area: "CT", plana: "QUIMICA" },
+                { docente: "LAVADO SAAVEDRA KARLA", area: "COMUNICACIÓN", plana: "TEATRO" }
+            ]
+        };
+
+        // Lista de sedes
+        const SEDES = [
+            "AREQUIPA", "BARRANCO", "BELISARIO", "BELLAVISTA", "BELLIDO", 
+            "CAJAMARCA", "CALCA", "CAMPOY", "CANTA CALLAO", "CARABAYLLO", 
+            "CHACLACAYO", "CHORRILLOS", "CIPRESES", "CUBA", "EL AGUSTINO", 
+            "EL RETABLO", "EL ROSARIO", "ELIO", "HUAYCAN", "HUANCAYO", 
+            "HUARAL", "ICA", "INGENIEROS", "JAVIER PRADO", "JULIACA", 
+            "LA VICTORIA", "LAS PALMERAS", "LINCE", "LOS COCALENOS", "LURIN", 
+            "MIGUEL IGLESIAS", "MONTERRICO", "MONTESSORI", "NARANJAL", 
+            "PISCO", "PUCALLPA", "PUEBLO LIBRE", "PUENTE PIEDRA", "QUILCA", 
+            "SALAMANCA", "SAN CARLOS", "SAN LUIS", "SAN MIGUEL", "SANTA ANITA", 
+            "SORIA", "TARMA", "VENTANILLA", "VILLA EL SALVADOR", "VILLA SOL"
+        ];
+
+        // Claves para localStorage
+        const STORAGE_KEYS = {
+            ASSIGNMENTS: 'personal_reemplazo_assignments',
+            CHANGE_LOG: 'personal_reemplazo_change_log',
+            LAST_SYNC: 'personal_reemplazo_last_sync'
+        };
+        
+        // Elementos del DOM
+        const assignmentForm = document.getElementById('assignment-form');
+        const assignmentEmployee = document.getElementById('assignment-employee');
+        const assignmentsList = document.getElementById('assignments-list');
+        const assignmentsDate = document.getElementById('assignments-date');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const syncStatus = document.getElementById('sync-status');
+        const daySelectorBtns = document.querySelectorAll('.day-selector-btn');
+        const realtimeNotification = document.getElementById('realtime-notification');
+        const assignmentsCountBadge = document.getElementById('assignments-count-badge');
+        const managementDayBtns = document.querySelectorAll('.management-day-btn');
+        const managementDayContent = document.getElementById('management-day-content');
+        const internalTabs = document.querySelectorAll('.internal-tab');
+        const internalTabContents = document.querySelectorAll('.internal-tab-content');
+        
+        // Elementos de gestión de datos
+        const exportButton = document.getElementById('export-data');
+        const importButton = document.getElementById('import-data');
+        const clearButton = document.getElementById('clear-data');
+        const importFile = document.getElementById('import-file');
+        const dataPreview = document.getElementById('data-preview');
+        const assignmentsCount = document.getElementById('assignments-count');
+        const lastUpdate = document.getElementById('last-update');
+        
+        // Elementos de vista por fechas
+        const dateFilter = document.getElementById('date-filter');
+        const sedeFilter = document.getElementById('sede-filter');
+        const applyFilters = document.getElementById('apply-filters');
+        const clearFilters = document.getElementById('clear-filters');
+        const datesList = document.getElementById('dates-list');
+        const totalAssignments = document.getElementById('total-assignments');
+        const morningAssignments = document.getElementById('morning-assignments');
+        const afternoonAssignments = document.getElementById('afternoon-assignments');
+        const uniqueSedes = document.getElementById('unique-sedes');
+        
+        // Elementos de historial de cambios
+        const startDate = document.getElementById('start-date');
+        const endDate = document.getElementById('end-date');
+        const loadChanges = document.getElementById('load-changes');
+        const changeLog = document.getElementById('change-log');
+        
+        // Variables globales
+        let selectedDay = 'lunes';
+        let assignments = [];
+        let selectedManagementDay = 'lunes';
+        let changeLogData = [];
+        
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            // Establecer fecha actual como valor predeterminado
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('assignment-date').value = today;
+            assignmentsDate.value = today;
+            dateFilter.value = today;
+            startDate.value = today;
+            endDate.value = today;
+            
+            // Cargar datos iniciales
+            loadAllData();
+            
+            // Cargar lista de docentes pre-cargados
+            loadPrecargadosDocentes();
+            
+            // Configurar eventos
+            setupEventListeners();
+            
+            // Actualizar estadísticas
+            updateStats();
+            
+            // Cargar vista de gestión inicial
+            renderManagementDayView(selectedManagementDay);
+            
+            // Cargar vista por fechas inicial
+            renderDatesView();
+        });
+        
+        // Configurar event listeners
+        function setupEventListeners() {
+            // Tabs
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    activateTab(tabId);
+                    
+                    // Cargar datos específicos de la pestaña
+                    if (tabId === 'data') {
+                        updateDataPreview();
+                        updateStats();
+                        renderManagementDayView(selectedManagementDay);
+                        renderDatesView();
+                    }
+                });
+            });
+            
+            // Tabs internas
+            internalTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-internal-tab');
+                    activateInternalTab(tabId);
+                    
+                    // Cargar datos específicos de la pestaña interna
+                    if (tabId === 'dates') {
+                        renderDatesView();
+                    } else if (tabId === 'changes') {
+                        loadChangeLog();
+                    }
+                });
+            });
+            
+            // Selector de días en asignaciones
+            daySelectorBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Remover clase active de todos los botones
+                    daySelectorBtns.forEach(b => b.classList.remove('active'));
+                    // Agregar clase active al botón clickeado
+                    this.classList.add('active');
+                    // Actualizar día seleccionado
+                    selectedDay = this.getAttribute('data-day');
+                    // Actualizar lista de docentes disponibles
+                    updateAssignmentEmployeeDropdown();
+                });
+            });
+            
+            // Selector de días en gestión de datos
+            managementDayBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Remover clase active de todos los botones
+                    managementDayBtns.forEach(b => b.classList.remove('active'));
+                    // Agregar clase active al botón clickeado
+                    this.classList.add('active');
+                    // Actualizar día seleccionado
+                    selectedManagementDay = this.getAttribute('data-day');
+                    // Actualizar vista de gestión
+                    renderManagementDayView(selectedManagementDay);
+                });
+            });
+            
+            // Formulario de asignación
+            assignmentForm.addEventListener('submit', handleAssignmentSubmit);
+            
+            // Cambio de fecha de asignaciones - actualización automática
+            assignmentsDate.addEventListener('change', function() {
+                renderAssignments();
+                showRealtimeNotification('Fecha cambiada - asignaciones actualizadas');
+            });
+            
+            // Opciones rápidas de labor
+            document.querySelectorAll('.labor-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.getElementById('assignment-labor').value = this.getAttribute('data-labor');
+                    
+                    // Resaltar la opción seleccionada
+                    document.querySelectorAll('.labor-option').forEach(opt => {
+                        opt.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                });
+            });
+            
+            // Filtros de vista por fechas
+            applyFilters.addEventListener('click', renderDatesView);
+            clearFilters.addEventListener('click', clearDateFilters);
+            
+            // Historial de cambios
+            loadChanges.addEventListener('click', loadChangeLog);
+            
+            // Gestión de datos
+            exportButton.addEventListener('click', exportAllData);
+            importButton.addEventListener('click', importData);
+            clearButton.addEventListener('click', clearAllData);
+            importFile.addEventListener('change', handleFileImport);
+        }
+        
+        // Activar pestaña
+        function activateTab(tabId) {
+            tabs.forEach(tab => {
+                if (tab.getAttribute('data-tab') === tabId) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            tabContents.forEach(content => {
+                if (content.id === `${tabId}-tab`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+        
+        // Activar pestaña interna
+        function activateInternalTab(tabId) {
+            internalTabs.forEach(tab => {
+                if (tab.getAttribute('data-internal-tab') === tabId) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            internalTabContents.forEach(content => {
+                if (content.id === `${tabId}-content`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+        
+        // Cargar todos los datos desde localStorage
+        function loadAllData() {
+            assignments = getAssignments();
+            changeLogData = getChangeLog();
+            renderAssignments();
+            updateSyncStatus();
+        }
+        
+        // Cargar lista de docentes pre-cargados
+        function loadPrecargadosDocentes() {
+            // Lunes
+            const mondayTeachers = document.getElementById('monday-teachers');
+            PRECARGADOS_DOCENTES.lunes.forEach(teacher => {
+                const row = createTeacherRow(teacher, 'lunes');
+                mondayTeachers.appendChild(row);
+            });
+            
+            // Martes
+            const tuesdayTeachers = document.getElementById('tuesday-teachers');
+            PRECARGADOS_DOCENTES.martes.forEach(teacher => {
+                const row = createTeacherRow(teacher, 'martes');
+                tuesdayTeachers.appendChild(row);
+            });
+            
+            // Miércoles
+            const wednesdayTeachers = document.getElementById('wednesday-teachers');
+            PRECARGADOS_DOCENTES.miercoles.forEach(teacher => {
+                const row = createTeacherRow(teacher, 'miercoles');
+                wednesdayTeachers.appendChild(row);
+            });
+            
+            // Jueves
+            const thursdayTeachers = document.getElementById('thursday-teachers');
+            PRECARGADOS_DOCENTES.jueves.forEach(teacher => {
+                const row = createTeacherRow(teacher, 'jueves');
+                thursdayTeachers.appendChild(row);
+            });
+            
+            // Viernes
+            const fridayTeachers = document.getElementById('friday-teachers');
+            PRECARGADOS_DOCENTES.viernes.forEach(teacher => {
+                const row = createTeacherRow(teacher, 'viernes');
+                fridayTeachers.appendChild(row);
+            });
+            
+            // Actualizar dropdown de asignaciones
+            updateAssignmentEmployeeDropdown();
+        }
+        
+        // Crear fila para docente pre-cargado
+        function createTeacherRow(teacher, day) {
+            const row = document.createElement('tr');
+            
+            // Determinar clase CSS para el área
+            let areaClass = '';
+            if (teacher.area === 'CT') areaClass = 'area-ct';
+            else if (teacher.area === 'MATEMATICA') areaClass = 'area-matematica';
+            else if (teacher.area === 'COMUNICACIÓN') areaClass = 'area-comunicacion';
+            else if (teacher.area === 'CCSS') areaClass = 'area-ccss';
+            
+            row.innerHTML = `
+                <td>${teacher.docente}</td>
+                <td><span class="area-badge ${areaClass}">${teacher.area}</span></td>
+                <td>${teacher.plana}</td>
+                <td>
+                    <button class="btn-success" onclick="assignPrecargado('${teacher.docente}', '${teacher.area}', '${teacher.plana}', '${day}')">Asignar</button>
+                </td>
+            `;
+            
+            return row;
+        }
+        
+        // Asignar docente pre-cargado
+        function assignPrecargado(docente, area, plana, day) {
+            // Cambiar a la pestaña de asignaciones
+            activateTab('assignment');
+            
+            // Seleccionar el día correspondiente
+            daySelectorBtns.forEach(btn => {
+                if (btn.getAttribute('data-day') === day) {
+                    btn.click();
+                }
+            });
+            
+            // Establecer valores en el formulario
+            const today = new Date();
+            const dayIndex = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'].indexOf(day);
+            const targetDate = new Date(today);
+            
+            // Encontrar el próximo día de la semana correspondiente
+            const daysUntilTarget = (dayIndex - today.getDay() + 7) % 7;
+            targetDate.setDate(today.getDate() + daysUntilTarget);
+            
+            document.getElementById('assignment-date').value = targetDate.toISOString().split('T')[0];
+            document.getElementById('assignment-labor').value = `Reemplazo - ${plana}`;
+            
+            // Actualizar también la fecha de visualización de asignaciones
+            assignmentsDate.value = targetDate.toISOString().split('T')[0];
+            
+            // Seleccionar el docente en el dropdown
+            const employeeSelect = document.getElementById('assignment-employee');
+            for (let i = 0; i < employeeSelect.options.length; i++) {
+                if (employeeSelect.options[i].text.includes(docente)) {
+                    employeeSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            // Enfocar el campo de labor
+            document.getElementById('assignment-labor').focus();
+            
+            showRealtimeNotification(`Datos pre-cargados para ${docente}`);
+        }
+        
+        // Obtener asignaciones desde localStorage
+        function getAssignments() {
+            const assignmentsJSON = localStorage.getItem(STORAGE_KEYS.ASSIGNMENTS);
+            return assignmentsJSON ? JSON.parse(assignmentsJSON) : [];
+        }
+        
+        // Guardar asignaciones en localStorage
+        function saveAssignments(updatedAssignments) {
+            assignments = updatedAssignments;
+            localStorage.setItem(STORAGE_KEYS.ASSIGNMENTS, JSON.stringify(assignments));
+            updateSyncStatus();
+            updateStats();
+            
+            // Actualizar automáticamente la vista de asignaciones
+            renderAssignments();
+            showRealtimeNotification('Asignaciones actualizadas automáticamente');
+            
+            // Actualizar también la vista de gestión si está activa
+            if (document.getElementById('data-tab').classList.contains('active')) {
+                renderManagementDayView(selectedManagementDay);
+                renderDatesView();
+            }
+        }
+        
+        // Obtener historial de cambios desde localStorage
+        function getChangeLog() {
+            const changeLogJSON = localStorage.getItem(STORAGE_KEYS.CHANGE_LOG);
+            return changeLogJSON ? JSON.parse(changeLogJSON) : [];
+        }
+        
+        // Guardar historial de cambios en localStorage
+        function saveChangeLog(updatedChangeLog) {
+            changeLogData = updatedChangeLog;
+            localStorage.setItem(STORAGE_KEYS.CHANGE_LOG, JSON.stringify(changeLogData));
+        }
+        
+        // Agregar entrada al historial de cambios
+        function addChangeLogEntry(action, details) {
+            const newEntry = {
+                id: Date.now().toString(),
+                timestamp: new Date().toISOString(),
+                action,
+                details
+            };
+            
+            const updatedChangeLog = [newEntry, ...changeLogData];
+            saveChangeLog(updatedChangeLog);
+        }
+        
+        // Actualizar estado de sincronización
+        function updateSyncStatus() {
+            const lastSync = localStorage.getItem(STORAGE_KEYS.LAST_SYNC);
+            
+            if (lastSync) {
+                const date = new Date(parseInt(lastSync));
+                syncStatus.textContent = `Actualizado: ${date.toLocaleString()}`;
+            } else {
+                syncStatus.textContent = 'Datos Locales';
+            }
+            
+            // Actualizar última sincronización
+            localStorage.setItem(STORAGE_KEYS.LAST_SYNC, Date.now().toString());
+        }
+        
+        // Actualizar dropdown de docentes para asignaciones
+        function updateAssignmentEmployeeDropdown() {
+            assignmentEmployee.innerHTML = '<option value="">Seleccionar docente</option>';
+            
+            const teachers = PRECARGADOS_DOCENTES[selectedDay];
+            
+            if (!teachers) return;
+            
+            teachers.forEach(teacher => {
+                const option = document.createElement('option');
+                option.value = `${teacher.docente}|${teacher.area}|${teacher.plana}`;
+                option.textContent = `${teacher.docente} - ${teacher.area} (${teacher.plana})`;
+                assignmentEmployee.appendChild(option);
+            });
+        }
+        
+        // Manejar envío del formulario de asignación
+        function handleAssignmentSubmit(e) {
+            e.preventDefault();
+            
+            const date = document.getElementById('assignment-date').value;
+            const employeeValue = document.getElementById('assignment-employee').value;
+            const shift = document.getElementById('assignment-shift').value;
+            const labor = document.getElementById('assignment-labor').value;
+            const location = document.getElementById('assignment-location').value;
+            
+            if (!employeeValue) {
+                alert('Por favor seleccione un docente');
+                return;
+            }
+            
+            // Obtener información del docente
+            const [docente, area, plana] = employeeValue.split('|');
+            
+            // Verificar si ya existe una asignación para este docente en esta fecha y turno
+            const existingAssignment = assignments.find(a => 
+                a.docente === docente && 
+                a.date === date && 
+                a.shift === shift
+            );
+            
+            if (existingAssignment) {
+                alert('Este docente ya tiene una asignación para esta fecha y turno');
+                return;
+            }
+            
+            // Crear nueva asignación
+            const newAssignment = {
+                id: Date.now().toString(),
+                docente,
+                area,
+                plana,
+                date,
+                shift,
+                labor,
+                location
+            };
+            
+            // Agregar a la lista
+            const updatedAssignments = [...assignments, newAssignment];
+            
+            // Guardar en localStorage
+            saveAssignments(updatedAssignments);
+            
+            // Agregar entrada al historial de cambios
+            addChangeLogEntry(
+                'ASIGNACIÓN CREADA',
+                `${docente} asignado a ${labor} en ${location} (${shift}) para el ${date}`
+            );
+            
+            // Limpiar formulario
+            assignmentForm.reset();
+            document.getElementById('assignment-date').value = date;
+            updateAssignmentEmployeeDropdown();
+            
+            // Limpiar selección de opciones de labor
+            document.querySelectorAll('.labor-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            
+            showRealtimeNotification('Asignación realizada exitosamente');
+        }
+        
+        // Renderizar asignaciones
+        function renderAssignments() {
+            const selectedDate = assignmentsDate.value;
+            const filteredAssignments = assignments.filter(a => a.date === selectedDate);
+            
+            assignmentsList.innerHTML = '';
+            
+            if (filteredAssignments.length === 0) {
+                assignmentsList.innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay asignaciones para esta fecha</td></tr>';
+                assignmentsCountBadge.textContent = '0';
+                return;
+            }
+            
+            filteredAssignments.forEach(assignment => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${assignment.docente} (${assignment.area})</td>
+                    <td>${assignment.shift}</td>
+                    <td>${assignment.labor}</td>
+                    <td>${assignment.location}</td>
+                    <td>
+                        <button class="btn-danger" onclick="deleteAssignment('${assignment.id}')">Eliminar</button>
+                    </td>
+                `;
+                
+                assignmentsList.appendChild(row);
+            });
+            
+            // Actualizar contador
+            assignmentsCountBadge.textContent = filteredAssignments.length;
+        }
+        
+        // Eliminar asignación
+        function deleteAssignment(id) {
+            if (confirm('¿Está seguro de que desea eliminar esta asignación?')) {
+                const assignmentToDelete = assignments.find(a => a.id === id);
+                const updatedAssignments = assignments.filter(assignment => assignment.id !== id);
+                
+                // Agregar entrada al historial de cambios
+                if (assignmentToDelete) {
+                    addChangeLogEntry(
+                        'ASIGNACIÓN ELIMINADA',
+                        `${assignmentToDelete.docente} eliminado de ${assignmentToDelete.labor} en ${assignmentToDelete.location} (${assignmentToDelete.shift}) para el ${assignmentToDelete.date}`
+                    );
+                }
+                
+                saveAssignments(updatedAssignments);
+            }
+        }
+        
+        // Mostrar notificación de actualización en tiempo real
+        function showRealtimeNotification(message) {
+            realtimeNotification.textContent = message;
+            realtimeNotification.classList.add('show');
+            
+            setTimeout(() => {
+                realtimeNotification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Renderizar vista de gestión por día
+        function renderManagementDayView(day) {
+            const teachers = PRECARGADOS_DOCENTES[day];
+            if (!teachers) {
+                managementDayContent.innerHTML = '<p>No hay docentes disponibles para este día.</p>';
+                return;
+            }
+            
+            // Obtener la fecha correspondiente al día seleccionado
+            const today = new Date();
+            const dayIndex = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'].indexOf(day);
+            const targetDate = new Date(today);
+            const daysUntilTarget = (dayIndex - today.getDay() + 7) % 7;
+            targetDate.setDate(today.getDate() + daysUntilTarget);
+            const targetDateString = targetDate.toISOString().split('T')[0];
+            
+            let html = `
+                <div class="day-title">${day.toUpperCase()} - ${targetDateString}</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Docente</th>
+                            <th>Área</th>
+                            <th>Plana</th>
+                            <th>Turno Mañana</th>
+                            <th>Turno Tarde</th>
+                            <th>Ubicaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            teachers.forEach(teacher => {
+                // Buscar asignaciones para este docente en la fecha objetivo
+                const morningAssignments = assignments.filter(a => 
+                    a.docente === teacher.docente && 
+                    a.date === targetDateString && 
+                    a.shift === 'mañana'
+                );
+                
+                const afternoonAssignments = assignments.filter(a => 
+                    a.docente === teacher.docente && 
+                    a.date === targetDateString && 
+                    a.shift === 'tarde'
+                );
+                
+                const morningLocation = morningAssignments.length > 0 ? 
+                    morningAssignments.map(a => `<span class="sede-item">${a.location}</span>`).join('') : 
+                    'Sin asignación';
+                
+                const afternoonLocation = afternoonAssignments.length > 0 ? 
+                    afternoonAssignments.map(a => `<span class="sede-item">${a.location}</span>`).join('') : 
+                    'Sin asignación';
+                
+                // Determinar clase CSS para el área
+                let areaClass = '';
+                if (teacher.area === 'CT') areaClass = 'area-ct';
+                else if (teacher.area === 'MATEMATICA') areaClass = 'area-matematica';
+                else if (teacher.area === 'COMUNICACIÓN') areaClass = 'area-comunicacion';
+                else if (teacher.area === 'CCSS') areaClass = 'area-ccss';
+                
+                html += `
+                    <tr>
+                        <td>${teacher.docente}</td>
+                        <td><span class="area-badge ${areaClass}">${teacher.area}</span></td>
+                        <td>${teacher.plana}</td>
+                        <td>${morningAssignments.length > 0 ? '✅ Asignado' : '❌ Disponible'}</td>
+                        <td>${afternoonAssignments.length > 0 ? '✅ Asignado' : '❌ Disponible'}</td>
+                        <td>
+                            <div><strong>Mañana:</strong> ${morningLocation}</div>
+                            <div><strong>Tarde:</strong> ${afternoonLocation}</div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
+            managementDayContent.innerHTML = html;
+        }
+        
+        // Renderizar vista por fechas
+        function renderDatesView() {
+            const dateFilterValue = dateFilter.value;
+            const sedeFilterValue = sedeFilter.value;
+            
+            let filteredAssignments = [...assignments];
+            
+            // Aplicar filtros
+            if (dateFilterValue) {
+                filteredAssignments = filteredAssignments.filter(a => a.date === dateFilterValue);
+            }
+            
+            if (sedeFilterValue) {
+                filteredAssignments = filteredAssignments.filter(a => a.location === sedeFilterValue);
+            }
+            
+            // Ordenar por fecha (más reciente primero)
+            filteredAssignments.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            datesList.innerHTML = '';
+            
+            if (filteredAssignments.length === 0) {
+                datesList.innerHTML = '<tr><td colspan="8" style="text-align: center;">No hay asignaciones para los filtros seleccionados</td></tr>';
+                
+                // Actualizar estadísticas
+                totalAssignments.textContent = '0';
+                morningAssignments.textContent = '0';
+                afternoonAssignments.textContent = '0';
+                uniqueSedes.textContent = '0';
+                
+                return;
+            }
+            
+            filteredAssignments.forEach(assignment => {
+                const date = new Date(assignment.date);
+                const dayOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][date.getDay()];
+                
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${assignment.date}</td>
+                    <td>${dayOfWeek}</td>
+                    <td>${assignment.docente}</td>
+                    <td><span class="area-badge area-${assignment.area.toLowerCase()}">${assignment.area}</span></td>
+                    <td>${assignment.shift}</td>
+                    <td>${assignment.labor}</td>
+                    <td>${assignment.location}</td>
+                    <td>
+                        <button class="btn-danger" onclick="deleteAssignment('${assignment.id}')">Eliminar</button>
+                    </td>
+                `;
+                
+                datesList.appendChild(row);
+            });
+            
+            // Actualizar estadísticas
+            updateDateStats(filteredAssignments);
+        }
+        
+        // Actualizar estadísticas de vista por fechas
+        function updateDateStats(filteredAssignments) {
+            const total = filteredAssignments.length;
+            const morning = filteredAssignments.filter(a => a.shift === 'mañana').length;
+            const afternoon = filteredAssignments.filter(a => a.shift === 'tarde').length;
+            
+            // Obtener sedes únicas
+            const uniqueSedesSet = new Set(filteredAssignments.map(a => a.location));
+            const uniqueSedesCount = uniqueSedesSet.size;
+            
+            totalAssignments.textContent = total;
+            morningAssignments.textContent = morning;
+            afternoonAssignments.textContent = afternoon;
+            uniqueSedes.textContent = uniqueSedesCount;
+        }
+        
+        // Limpiar filtros de fecha
+        function clearDateFilters() {
+            dateFilter.value = '';
+            sedeFilter.value = '';
+            renderDatesView();
+        }
+        
+        // Cargar historial de cambios
+        function loadChangeLog() {
+            const startDateValue = startDate.value;
+            const endDateValue = endDate.value;
+            
+            let filteredChanges = [...changeLogData];
+            
+            // Aplicar filtros de fecha
+            if (startDateValue && endDateValue) {
+                filteredChanges = filteredChanges.filter(change => {
+                    const changeDate = change.timestamp.split('T')[0];
+                    return changeDate >= startDateValue && changeDate <= endDateValue;
+                });
+            }
+            
+            changeLog.innerHTML = '';
+            
+            if (filteredChanges.length === 0) {
+                changeLog.innerHTML = '<p>No hay cambios registrados para el período seleccionado.</p>';
+                return;
+            }
+            
+            filteredChanges.forEach(change => {
+                const changeDate = new Date(change.timestamp);
+                const formattedDate = changeDate.toLocaleDateString('es-ES');
+                const formattedTime = changeDate.toLocaleTimeString('es-ES');
+                
+                const changeItem = document.createElement('div');
+                changeItem.className = 'change-item';
+                
+                changeItem.innerHTML = `
+                    <div class="change-time">${formattedDate} ${formattedTime}</div>
+                    <div><strong>${change.action}</strong></div>
+                    <div class="change-details">${change.details}</div>
+                `;
+                
+                changeLog.appendChild(changeItem);
+            });
+        }
+        
+        // Exportar todos los datos
+        function exportAllData() {
+            const data = {
+                assignments,
+                changeLog: changeLogData,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `personal_reemplazo_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Agregar entrada al historial de cambios
+            addChangeLogEntry('EXPORTACIÓN DE DATOS', 'Todos los datos del sistema fueron exportados');
+            
+            showRealtimeNotification('Datos exportados exitosamente');
+        }
+        
+        // Importar datos
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        
+                        if (confirm('¿Está seguro de que desea importar estos datos? Se sobrescribirán los datos actuales.')) {
+                            if (data.assignments) {
+                                saveAssignments(data.assignments);
+                            }
+                            
+                            if (data.changeLog) {
+                                saveChangeLog(data.changeLog);
+                            }
+                            
+                            // Agregar entrada al historial de cambios
+                            addChangeLogEntry('IMPORTACIÓN DE DATOS', 'Datos del sistema importados desde archivo');
+                            
+                            showRealtimeNotification('Datos importados exitosamente');
+                        }
+                    } catch (error) {
+                        alert('Error al importar datos: Archivo no válido');
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        // Manejar importación desde el input de archivo
+        function handleFileImport(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(event) {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    dataPreview.value = JSON.stringify(data, null, 2);
+                } catch (error) {
+                    alert('Error al leer el archivo: Formato no válido');
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // Limpiar todos los datos
+        function clearAllData() {
+            if (confirm('¿Está seguro de que desea eliminar TODOS los datos? Esta acción no se puede deshacer.')) {
+                assignments = [];
+                changeLogData = [];
+                localStorage.removeItem(STORAGE_KEYS.ASSIGNMENTS);
+                localStorage.removeItem(STORAGE_KEYS.CHANGE_LOG);
+                localStorage.removeItem(STORAGE_KEYS.LAST_SYNC);
+                
+                // Agregar entrada al historial de cambios
+                addChangeLogEntry('LIMPIEZA DE DATOS', 'Todos los datos del sistema fueron eliminados');
+                
+                renderAssignments();
+                updateStats();
+                renderManagementDayView(selectedManagementDay);
+                renderDatesView();
+                loadChangeLog();
+                showRealtimeNotification('Todos los datos han sido eliminados');
+            }
+        }
+        
+        // Actualizar vista previa de datos
+        function updateDataPreview() {
+            const data = {
+                assignments,
+                changeLog: changeLogData,
+                lastUpdate: new Date().toISOString()
+            };
+            
+            dataPreview.value = JSON.stringify(data, null, 2);
+        }
+        
+        // Actualizar estadísticas
+        function updateStats() {
+            const lastSync = localStorage.getItem(STORAGE_KEYS.LAST_SYNC);
+            
+            assignmentsCount.textContent = assignments.length;
+            
+            if (lastSync) {
+                const date = new Date(parseInt(lastSync));
+                lastUpdate.textContent = date.toLocaleString();
+            } else {
+                lastUpdate.textContent = 'Nunca';
+            }
+        }
+    </script>
+</body>
+</html>
