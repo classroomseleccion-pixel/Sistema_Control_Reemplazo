@@ -476,8 +476,49 @@
             display: block;
         }
         
+        .teacher-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .availability-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .day-cell {
+            background-color: var(--light-color);
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+        }
+        
+        .day-cell.available {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .day-cell.unavailable {
+            background-color: #ddd;
+            color: #777;
+        }
+        
+        .teacher-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .teacher-actions button {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+        
         @media (max-width: 768px) {
-            .assignment-form {
+            .assignment-form, .teacher-form {
                 grid-template-columns: 1fr;
             }
             
@@ -523,6 +564,14 @@
             .internal-tabs {
                 flex-direction: column;
             }
+            
+            .availability-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .teacher-actions {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -530,13 +579,14 @@
     <div class="container">
         <header>
             <h1>Sistema de Control de Personal de Reemplazo</h1>
-            <p class="subtitle">Gestión de disponibilidad y asignación diaria - Vista Completa por Fechas</p>
+            <p class="subtitle">Gestión de disponibilidad y asignación diaria - Gestión Completa de Docentes</p>
             <div class="sync-status" id="sync-status">Datos Locales</div>
         </header>
         
         <div class="tabs">
             <div class="tab active" data-tab="assignment">Asignaciones</div>
             <div class="tab" data-tab="teachers">Lista de Docentes</div>
+            <div class="tab" data-tab="manage-teachers">Gestionar Docentes</div>
             <div class="tab" data-tab="data">Gestión de Datos</div>
         </div>
         
@@ -591,7 +641,12 @@
                             <option value="Tutoría">
                         </datalist>
                         
-                        
+                        <div class="labor-options">
+                            <div class="labor-option" data-labor="Reemplazo en Lince">Lince</div>
+                            <div class="labor-option" data-labor="Reemplazo en Aula">Aula</div>
+                            <div class="labor-option" data-labor="Coordinación Académica">Coordinación</div>
+                            <div class="labor-option" data-labor="Capacitación">Capacitación</div>
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -774,6 +829,90 @@
             </div>
         </div>
         
+        <!-- Pestaña de Gestionar Docentes -->
+        <div class="tab-content" id="manage-teachers-tab">
+            <div class="card">
+                <h2 class="card-title">Gestionar Docentes</h2>
+                <p>Agregue, edite o elimine docentes del sistema. Los docentes agregados estarán disponibles para asignaciones.</p>
+                
+                <form id="teacher-form" class="teacher-form">
+                    <div class="form-group">
+                        <label for="teacher-name">Nombre Completo del Docente</label>
+                        <input type="text" id="teacher-name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="teacher-area">Área</label>
+                        <select id="teacher-area" required>
+                            <option value="">Seleccionar área</option>
+                            <option value="CT">CT</option>
+                            <option value="MATEMATICA">MATEMATICA</option>
+                            <option value="COMUNICACIÓN">COMUNICACIÓN</option>
+                            <option value="CCSS">CCSS</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="teacher-plana">Plana</label>
+                        <input type="text" id="teacher-plana" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Días Disponibles</label>
+                        <div class="availability-grid">
+                            <div class="day-cell available" data-day="lunes">Lunes</div>
+                            <div class="day-cell available" data-day="martes">Martes</div>
+                            <div class="day-cell available" data-day="miercoles">Miércoles</div>
+                            <div class="day-cell available" data-day="jueves">Jueves</div>
+                            <div class="day-cell available" data-day="viernes">Viernes</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Turnos Disponibles</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="teacher-morning" checked>
+                                <label for="teacher-morning">Mañana</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="teacher-afternoon" checked>
+                                <label for="teacher-afternoon">Tarde</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <button type="submit" class="btn-success" id="teacher-submit-btn">Agregar Docente</button>
+                        <button type="button" class="btn-warning hidden" id="teacher-cancel-btn">Cancelar Edición</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title">Docentes Registrados <span id="teachers-count-badge" class="area-badge area-ct">0</span></h2>
+                <div id="teachers-loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>Cargando docentes...</p>
+                </div>
+                <table id="teachers-table">
+                    <thead>
+                        <tr>
+                            <th>Docente</th>
+                            <th>Área</th>
+                            <th>Plana</th>
+                            <th>Días Disponibles</th>
+                            <th>Turnos</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teachers-list">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
         <!-- Pestaña de Gestión de Datos -->
         <div class="tab-content" id="data-tab">
             <div class="internal-tabs">
@@ -945,7 +1084,7 @@
                     </div>
                 </div>
             </div>
-          <!--   
+            
             <div class="card">
                 <h2 class="card-title">Gestión de Datos del Sistema</h2>
                 <p>Utilice las siguientes opciones para gestionar los datos del sistema y sincronizar entre diferentes navegadores.</p>
@@ -970,12 +1109,13 @@
                     <h3 class="card-title">Estadísticas del Sistema</h3>
                     <div id="stats-container">
                         <p><strong>Total de asignaciones:</strong> <span id="assignments-count">0</span></p>
+                        <p><strong>Total de docentes:</strong> <span id="teachers-count">0</span></p>
                         <p><strong>Última actualización:</strong> <span id="last-update">Nunca</span></p>
                     </div>
                 </div>
             </div>
         </div>
-    </div>-->
+    </div>
 
     <!-- Notificación de actualización automática -->
     <div class="real-time-notification" id="realtime-notification">
@@ -1073,6 +1213,7 @@
         // Claves para localStorage
         const STORAGE_KEYS = {
             ASSIGNMENTS: 'personal_reemplazo_assignments',
+            TEACHERS: 'personal_reemplazo_teachers',
             CHANGE_LOG: 'personal_reemplazo_change_log',
             LAST_SYNC: 'personal_reemplazo_last_sync'
         };
@@ -1092,6 +1233,19 @@
         const managementDayContent = document.getElementById('management-day-content');
         const internalTabs = document.querySelectorAll('.internal-tab');
         const internalTabContents = document.querySelectorAll('.internal-tab-content');
+        
+        // Elementos de gestión de docentes
+        const teacherForm = document.getElementById('teacher-form');
+        const teacherName = document.getElementById('teacher-name');
+        const teacherArea = document.getElementById('teacher-area');
+        const teacherPlana = document.getElementById('teacher-plana');
+        const teacherMorning = document.getElementById('teacher-morning');
+        const teacherAfternoon = document.getElementById('teacher-afternoon');
+        const teacherSubmitBtn = document.getElementById('teacher-submit-btn');
+        const teacherCancelBtn = document.getElementById('teacher-cancel-btn');
+        const teachersList = document.getElementById('teachers-list');
+        const teachersCountBadge = document.getElementById('teachers-count-badge');
+        const teachersCount = document.getElementById('teachers-count');
         
         // Elementos de gestión de datos
         const exportButton = document.getElementById('export-data');
@@ -1122,8 +1276,10 @@
         // Variables globales
         let selectedDay = 'lunes';
         let assignments = [];
+        let teachers = [];
         let selectedManagementDay = 'lunes';
         let changeLogData = [];
+        let editingTeacherId = null;
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
@@ -1168,6 +1324,8 @@
                         updateStats();
                         renderManagementDayView(selectedManagementDay);
                         renderDatesView();
+                    } else if (tabId === 'manage-teachers') {
+                        renderTeachersList();
                     }
                 });
             });
@@ -1217,6 +1375,20 @@
             
             // Formulario de asignación
             assignmentForm.addEventListener('submit', handleAssignmentSubmit);
+            
+            // Formulario de docente
+            teacherForm.addEventListener('submit', handleTeacherSubmit);
+            
+            // Botón de cancelar edición de docente
+            teacherCancelBtn.addEventListener('click', cancelTeacherEdit);
+            
+            // Días disponibles para docente
+            document.querySelectorAll('#teacher-form .day-cell').forEach(cell => {
+                cell.addEventListener('click', function() {
+                    this.classList.toggle('available');
+                    this.classList.toggle('unavailable');
+                });
+            });
             
             // Cambio de fecha de asignaciones - actualización automática
             assignmentsDate.addEventListener('change', function() {
@@ -1292,6 +1464,7 @@
         // Cargar todos los datos desde localStorage
         function loadAllData() {
             assignments = getAssignments();
+            teachers = getTeachers();
             changeLogData = getChangeLog();
             renderAssignments();
             updateSyncStatus();
@@ -1427,6 +1600,26 @@
             }
         }
         
+        // Obtener docentes desde localStorage
+        function getTeachers() {
+            const teachersJSON = localStorage.getItem(STORAGE_KEYS.TEACHERS);
+            return teachersJSON ? JSON.parse(teachersJSON) : [];
+        }
+        
+        // Guardar docentes en localStorage
+        function saveTeachers(updatedTeachers) {
+            teachers = updatedTeachers;
+            localStorage.setItem(STORAGE_KEYS.TEACHERS, JSON.stringify(teachers));
+            updateSyncStatus();
+            updateStats();
+            
+            // Actualizar automáticamente la lista de docentes
+            renderTeachersList();
+            updateAssignmentEmployeeDropdown();
+            
+            showRealtimeNotification('Docentes actualizados automáticamente');
+        }
+        
         // Obtener historial de cambios desde localStorage
         function getChangeLog() {
             const changeLogJSON = localStorage.getItem(STORAGE_KEYS.CHANGE_LOG);
@@ -1471,11 +1664,25 @@
         function updateAssignmentEmployeeDropdown() {
             assignmentEmployee.innerHTML = '<option value="">Seleccionar docente</option>';
             
-            const teachers = PRECARGADOS_DOCENTES[selectedDay];
+            // Combinar docentes pre-cargados y docentes agregados
+            const allTeachers = [...teachers];
             
-            if (!teachers) return;
+            // Agregar docentes pre-cargados para el día seleccionado
+            const precargados = PRECARGADOS_DOCENTES[selectedDay] || [];
+            precargados.forEach(teacher => {
+                allTeachers.push({
+                    id: `precargado-${teacher.docente}`,
+                    docente: teacher.docente,
+                    area: teacher.area,
+                    plana: teacher.plana,
+                    availableDays: ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'],
+                    availableShifts: ['mañana', 'tarde']
+                });
+            });
             
-            teachers.forEach(teacher => {
+            if (allTeachers.length === 0) return;
+            
+            allTeachers.forEach(teacher => {
                 const option = document.createElement('option');
                 option.value = `${teacher.docente}|${teacher.area}|${teacher.plana}`;
                 option.textContent = `${teacher.docente} - ${teacher.area} (${teacher.plana})`;
@@ -1550,6 +1757,236 @@
             showRealtimeNotification('Asignación realizada exitosamente');
         }
         
+        // Manejar envío del formulario de docente
+        function handleTeacherSubmit(e) {
+            e.preventDefault();
+            
+            const name = teacherName.value.trim();
+            const area = teacherArea.value;
+            const plana = teacherPlana.value.trim();
+            
+            if (!name || !area || !plana) {
+                alert('Por favor complete todos los campos obligatorios');
+                return;
+            }
+            
+            // Obtener días disponibles
+            const availableDays = [];
+            document.querySelectorAll('#teacher-form .day-cell.available').forEach(cell => {
+                availableDays.push(cell.getAttribute('data-day'));
+            });
+            
+            // Obtener turnos disponibles
+            const availableShifts = [];
+            if (teacherMorning.checked) {
+                availableShifts.push('mañana');
+            }
+            if (teacherAfternoon.checked) {
+                availableShifts.push('tarde');
+            }
+            
+            // Validar que haya al menos un día y un turno seleccionado
+            if (availableDays.length === 0 || availableShifts.length === 0) {
+                alert('Debe seleccionar al menos un día y un turno disponible');
+                return;
+            }
+            
+            if (editingTeacherId) {
+                // Editar docente existente
+                const updatedTeachers = teachers.map(teacher => {
+                    if (teacher.id === editingTeacherId) {
+                        return {
+                            ...teacher,
+                            docente: name,
+                            area,
+                            plana,
+                            availableDays,
+                            availableShifts
+                        };
+                    }
+                    return teacher;
+                });
+                
+                saveTeachers(updatedTeachers);
+                
+                // Agregar entrada al historial de cambios
+                addChangeLogEntry(
+                    'DOCENTE ACTUALIZADO',
+                    `${name} - ${area} (${plana}) actualizado en el sistema`
+                );
+                
+                showRealtimeNotification('Docente actualizado exitosamente');
+                
+                // Limpiar modo edición
+                cancelTeacherEdit();
+            } else {
+                // Crear nuevo docente
+                const newTeacher = {
+                    id: Date.now().toString(),
+                    docente: name,
+                    area,
+                    plana,
+                    availableDays,
+                    availableShifts
+                };
+                
+                // Agregar a la lista
+                const updatedTeachers = [...teachers, newTeacher];
+                
+                // Guardar en localStorage
+                saveTeachers(updatedTeachers);
+                
+                // Agregar entrada al historial de cambios
+                addChangeLogEntry(
+                    'DOCENTE AGREGADO',
+                    `${name} - ${area} (${plana}) agregado al sistema`
+                );
+                
+                showRealtimeNotification('Docente agregado exitosamente');
+            }
+            
+            // Limpiar formulario
+            teacherForm.reset();
+            
+            // Restablecer días disponibles
+            document.querySelectorAll('#teacher-form .day-cell').forEach(cell => {
+                cell.classList.add('available');
+                cell.classList.remove('unavailable');
+            });
+            
+            // Restablecer turnos disponibles
+            teacherMorning.checked = true;
+            teacherAfternoon.checked = true;
+        }
+        
+        // Cancelar edición de docente
+        function cancelTeacherEdit() {
+            editingTeacherId = null;
+            teacherSubmitBtn.textContent = 'Agregar Docente';
+            teacherCancelBtn.classList.add('hidden');
+            
+            // Limpiar formulario
+            teacherForm.reset();
+            
+            // Restablecer días disponibles
+            document.querySelectorAll('#teacher-form .day-cell').forEach(cell => {
+                cell.classList.add('available');
+                cell.classList.remove('unavailable');
+            });
+            
+            // Restablecer turnos disponibles
+            teacherMorning.checked = true;
+            teacherAfternoon.checked = true;
+        }
+        
+        // Editar docente
+        function editTeacher(id) {
+            const teacher = teachers.find(t => t.id === id);
+            if (!teacher) return;
+            
+            editingTeacherId = id;
+            
+            // Llenar formulario con datos del docente
+            teacherName.value = teacher.docente;
+            teacherArea.value = teacher.area;
+            teacherPlana.value = teacher.plana;
+            
+            // Establecer días disponibles
+            document.querySelectorAll('#teacher-form .day-cell').forEach(cell => {
+                const day = cell.getAttribute('data-day');
+                if (teacher.availableDays.includes(day)) {
+                    cell.classList.add('available');
+                    cell.classList.remove('unavailable');
+                } else {
+                    cell.classList.add('unavailable');
+                    cell.classList.remove('available');
+                }
+            });
+            
+            // Establecer turnos disponibles
+            teacherMorning.checked = teacher.availableShifts.includes('mañana');
+            teacherAfternoon.checked = teacher.availableShifts.includes('tarde');
+            
+            // Cambiar texto del botón
+            teacherSubmitBtn.textContent = 'Actualizar Docente';
+            teacherCancelBtn.classList.remove('hidden');
+            
+            // Desplazar hacia el formulario
+            document.getElementById('teacher-form').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Eliminar docente
+        function deleteTeacher(id) {
+            const teacher = teachers.find(t => t.id === id);
+            if (!teacher) return;
+            
+            if (confirm(`¿Está seguro de que desea eliminar al docente ${teacher.docente}?`)) {
+                // Verificar si el docente tiene asignaciones
+                const teacherAssignments = assignments.filter(a => a.docente === teacher.docente);
+                
+                if (teacherAssignments.length > 0) {
+                    if (!confirm(`Este docente tiene ${teacherAssignments.length} asignación(es). ¿Desea eliminarlo de todas formas? Las asignaciones también serán eliminadas.`)) {
+                        return;
+                    }
+                    
+                    // Eliminar asignaciones del docente
+                    const updatedAssignments = assignments.filter(a => a.docente !== teacher.docente);
+                    saveAssignments(updatedAssignments);
+                }
+                
+                // Eliminar docente
+                const updatedTeachers = teachers.filter(t => t.id !== id);
+                saveTeachers(updatedTeachers);
+                
+                // Agregar entrada al historial de cambios
+                addChangeLogEntry(
+                    'DOCENTE ELIMINADO',
+                    `${teacher.docente} - ${teacher.area} (${teacher.plana}) eliminado del sistema`
+                );
+                
+                showRealtimeNotification('Docente eliminado exitosamente');
+            }
+        }
+        
+        // Renderizar lista de docentes
+        function renderTeachersList() {
+            teachersList.innerHTML = '';
+            
+            if (teachers.length === 0) {
+                teachersList.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay docentes registrados</td></tr>';
+                teachersCountBadge.textContent = '0';
+                return;
+            }
+            
+            teachers.forEach(teacher => {
+                const row = document.createElement('tr');
+                
+                // Determinar clase CSS para el área
+                let areaClass = '';
+                if (teacher.area === 'CT') areaClass = 'area-ct';
+                else if (teacher.area === 'MATEMATICA') areaClass = 'area-matematica';
+                else if (teacher.area === 'COMUNICACIÓN') areaClass = 'area-comunicacion';
+                else if (teacher.area === 'CCSS') areaClass = 'area-ccss';
+                
+                row.innerHTML = `
+                    <td>${teacher.docente}</td>
+                    <td><span class="area-badge ${areaClass}">${teacher.area}</span></td>
+                    <td>${teacher.plana}</td>
+                    <td>${teacher.availableDays.join(', ')}</td>
+                    <td>${teacher.availableShifts.join(', ')}</td>
+                    <td class="teacher-actions">
+                        <button class="btn-info" onclick="editTeacher('${teacher.id}')">Editar</button>
+                        <button class="btn-danger" onclick="deleteTeacher('${teacher.id}')">Eliminar</button>
+                    </td>
+                `;
+                
+                teachersList.appendChild(row);
+            });
+            
+            // Actualizar contador
+            teachersCountBadge.textContent = teachers.length;
+        }
+        
         // Renderizar asignaciones
         function renderAssignments() {
             const selectedDate = assignmentsDate.value;
@@ -1613,8 +2050,21 @@
         
         // Renderizar vista de gestión por día
         function renderManagementDayView(day) {
-            const teachers = PRECARGADOS_DOCENTES[day];
-            if (!teachers) {
+            // Combinar docentes pre-cargados y docentes agregados para el día
+            const precargados = PRECARGADOS_DOCENTES[day] || [];
+            const customTeachers = teachers.filter(teacher => 
+                teacher.availableDays.includes(day)
+            );
+            
+            const allTeachers = [...precargados.map(t => ({
+                docente: t.docente,
+                area: t.area,
+                plana: t.plana,
+                availableDays: ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'],
+                availableShifts: ['mañana', 'tarde']
+            })), ...customTeachers];
+            
+            if (allTeachers.length === 0) {
                 managementDayContent.innerHTML = '<p>No hay docentes disponibles para este día.</p>';
                 return;
             }
@@ -1643,7 +2093,7 @@
                     <tbody>
             `;
             
-            teachers.forEach(teacher => {
+            allTeachers.forEach(teacher => {
                 // Buscar asignaciones para este docente en la fecha objetivo
                 const morningAssignments = assignments.filter(a => 
                     a.docente === teacher.docente && 
@@ -1821,6 +2271,7 @@
         function exportAllData() {
             const data = {
                 assignments,
+                teachers,
                 changeLog: changeLogData,
                 exportDate: new Date().toISOString(),
                 version: '1.0'
@@ -1860,6 +2311,10 @@
                         if (confirm('¿Está seguro de que desea importar estos datos? Se sobrescribirán los datos actuales.')) {
                             if (data.assignments) {
                                 saveAssignments(data.assignments);
+                            }
+                            
+                            if (data.teachers) {
+                                saveTeachers(data.teachers);
                             }
                             
                             if (data.changeLog) {
@@ -1905,8 +2360,10 @@
         function clearAllData() {
             if (confirm('¿Está seguro de que desea eliminar TODOS los datos? Esta acción no se puede deshacer.')) {
                 assignments = [];
+                teachers = [];
                 changeLogData = [];
                 localStorage.removeItem(STORAGE_KEYS.ASSIGNMENTS);
+                localStorage.removeItem(STORAGE_KEYS.TEACHERS);
                 localStorage.removeItem(STORAGE_KEYS.CHANGE_LOG);
                 localStorage.removeItem(STORAGE_KEYS.LAST_SYNC);
                 
@@ -1914,6 +2371,7 @@
                 addChangeLogEntry('LIMPIEZA DE DATOS', 'Todos los datos del sistema fueron eliminados');
                 
                 renderAssignments();
+                renderTeachersList();
                 updateStats();
                 renderManagementDayView(selectedManagementDay);
                 renderDatesView();
@@ -1926,6 +2384,7 @@
         function updateDataPreview() {
             const data = {
                 assignments,
+                teachers,
                 changeLog: changeLogData,
                 lastUpdate: new Date().toISOString()
             };
@@ -1938,6 +2397,7 @@
             const lastSync = localStorage.getItem(STORAGE_KEYS.LAST_SYNC);
             
             assignmentsCount.textContent = assignments.length;
+            teachersCount.textContent = teachers.length;
             
             if (lastSync) {
                 const date = new Date(parseInt(lastSync));
