@@ -854,7 +854,10 @@
                     
                     <div class="form-group">
                         <label for="teacher-plana">Plana</label>
-                        <input type="text" id="teacher-plana" required>
+                        <input type="text" id="teacher-plana" list="planas-list" required>
+                        <datalist id="planas-list">
+                            <!-- Las opciones se cargarán dinámicamente -->
+                        </datalist>
                     </div>
                     
                     <div class="form-group">
@@ -1196,6 +1199,13 @@
             ]
         };
 
+        // Lista de planas predefinidas
+        const PLANAS_PREDEFINIDAS = [
+            "BIOLOGÍA", "QUIMICA", "FISICA", "RAZ.MATEMÁTICO", "ARITMETICA", "ALGEBRA", 
+            "TRIGONOMETRIA", "GEOMETRIA", "LENGUAJE", "INGLÉS", "LITERATURA", "COMUNICACIÓN",
+            "HP", "HU", "CIVICA", "GEOGRAFIA", "FILOSOFIA", "PSICOLOGIA", "ECONOMIA", "TEATRO"
+        ];
+
         // Lista de sedes
         const SEDES = [
             "AREQUIPA", "BARRANCO", "BELISARIO", "BELLAVISTA", "BELLIDO", 
@@ -1215,7 +1225,8 @@
             ASSIGNMENTS: 'personal_reemplazo_assignments',
             TEACHERS: 'personal_reemplazo_teachers',
             CHANGE_LOG: 'personal_reemplazo_change_log',
-            LAST_SYNC: 'personal_reemplazo_last_sync'
+            LAST_SYNC: 'personal_reemplazo_last_sync',
+            PLANAS: 'personal_reemplazo_planas' // Nueva clave para almacenar planas
         };
         
         // Elementos del DOM
@@ -1280,6 +1291,7 @@
         let selectedManagementDay = 'lunes';
         let changeLogData = [];
         let editingTeacherId = null;
+        let planas = [];
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
@@ -1296,6 +1308,10 @@
             
             // Cargar lista de docentes pre-cargados
             loadPrecargadosDocentes();
+            
+            // Cargar y actualizar lista de planas
+            loadPlanas();
+            updatePlanasDatalist();
             
             // Configurar eventos
             setupEventListeners();
@@ -1470,6 +1486,31 @@
             updateSyncStatus();
         }
         
+        // Cargar planas desde localStorage
+        function loadPlanas() {
+            const planasJSON = localStorage.getItem(STORAGE_KEYS.PLANAS);
+            planas = planasJSON ? JSON.parse(planasJSON) : [...PLANAS_PREDEFINIDAS];
+        }
+        
+        // Guardar planas en localStorage
+        function savePlanas(updatedPlanas) {
+            planas = updatedPlanas;
+            localStorage.setItem(STORAGE_KEYS.PLANAS, JSON.stringify(planas));
+            updatePlanasDatalist();
+        }
+        
+        // Actualizar datalist de planas
+        function updatePlanasDatalist() {
+            const datalist = document.getElementById('planas-list');
+            datalist.innerHTML = '';
+            
+            planas.forEach(plana => {
+                const option = document.createElement('option');
+                option.value = plana;
+                datalist.appendChild(option);
+            });
+        }
+        
         // Cargar lista de docentes pre-cargados
         function loadPrecargadosDocentes() {
             // Lunes
@@ -1591,13 +1632,12 @@
             
             // Actualizar automáticamente la vista de asignaciones
             renderAssignments();
-            showRealtimeNotification('Asignaciones actualizadas automáticamente');
             
             // Actualizar también la vista de gestión si está activa
-            if (document.getElementById('data-tab').classList.contains('active')) {
-                renderManagementDayView(selectedManagementDay);
-                renderDatesView();
-            }
+            renderManagementDayView(selectedManagementDay);
+            renderDatesView();
+            
+            showRealtimeNotification('Asignaciones actualizadas automáticamente');
         }
         
         // Obtener docentes desde localStorage
@@ -1616,6 +1656,7 @@
             // Actualizar automáticamente la lista de docentes
             renderTeachersList();
             updateAssignmentEmployeeDropdown();
+            renderManagementDayView(selectedManagementDay);
             
             showRealtimeNotification('Docentes actualizados automáticamente');
         }
@@ -1789,6 +1830,12 @@
             if (availableDays.length === 0 || availableShifts.length === 0) {
                 alert('Debe seleccionar al menos un día y un turno disponible');
                 return;
+            }
+            
+            // Agregar la plana a la lista si no existe
+            if (!planas.includes(plana)) {
+                const updatedPlanas = [...planas, plana];
+                savePlanas(updatedPlanas);
             }
             
             if (editingTeacherId) {
@@ -2273,6 +2320,7 @@
                 assignments,
                 teachers,
                 changeLog: changeLogData,
+                planas,
                 exportDate: new Date().toISOString(),
                 version: '1.0'
             };
@@ -2321,6 +2369,10 @@
                                 saveChangeLog(data.changeLog);
                             }
                             
+                            if (data.planas) {
+                                savePlanas(data.planas);
+                            }
+                            
                             // Agregar entrada al historial de cambios
                             addChangeLogEntry('IMPORTACIÓN DE DATOS', 'Datos del sistema importados desde archivo');
                             
@@ -2362,10 +2414,12 @@
                 assignments = [];
                 teachers = [];
                 changeLogData = [];
+                planas = [...PLANAS_PREDEFINIDAS];
                 localStorage.removeItem(STORAGE_KEYS.ASSIGNMENTS);
                 localStorage.removeItem(STORAGE_KEYS.TEACHERS);
                 localStorage.removeItem(STORAGE_KEYS.CHANGE_LOG);
                 localStorage.removeItem(STORAGE_KEYS.LAST_SYNC);
+                localStorage.removeItem(STORAGE_KEYS.PLANAS);
                 
                 // Agregar entrada al historial de cambios
                 addChangeLogEntry('LIMPIEZA DE DATOS', 'Todos los datos del sistema fueron eliminados');
@@ -2376,6 +2430,7 @@
                 renderManagementDayView(selectedManagementDay);
                 renderDatesView();
                 loadChangeLog();
+                updatePlanasDatalist();
                 showRealtimeNotification('Todos los datos han sido eliminados');
             }
         }
@@ -2386,6 +2441,7 @@
                 assignments,
                 teachers,
                 changeLog: changeLogData,
+                planas,
                 lastUpdate: new Date().toISOString()
             };
             
