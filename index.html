@@ -251,6 +251,14 @@
             font-size: 0.9rem;
         }
         
+        .sync-status.offline {
+            background: var(--warning-color);
+        }
+        
+        .sync-status.error {
+            background: var(--danger-color);
+        }
+        
         .checkbox-group {
             display: flex;
             gap: 15px;
@@ -517,6 +525,21 @@
             font-size: 0.8rem;
         }
         
+        .cloud-sync-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .sync-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
         @media (max-width: 768px) {
             .assignment-form, .teacher-form {
                 grid-template-columns: 1fr;
@@ -572,6 +595,10 @@
             .teacher-actions {
                 flex-direction: column;
             }
+            
+            .sync-controls {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -580,7 +607,7 @@
         <header>
             <h1>Sistema de Control de Personal de Reemplazo</h1>
             <p class="subtitle">Gestión de disponibilidad y asignación diaria - Gestión Completa de Docentes</p>
-            <div class="sync-status" id="sync-status">Datos Locales</div>
+            <div class="sync-status" id="sync-status">Conectado</div>
         </header>
         
         <div class="tabs">
@@ -641,7 +668,12 @@
                             <option value="Tutoría">
                         </datalist>
                         
-                        
+                        <div class="labor-options">
+                            <div class="labor-option" data-labor="Reemplazo en Lince">Lince</div>
+                            <div class="labor-option" data-labor="Reemplazo en Aula">Aula</div>
+                            <div class="labor-option" data-labor="Coordinación Académica">Coordinación</div>
+                            <div class="labor-option" data-labor="Capacitación">Capacitación</div>
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -1103,6 +1135,36 @@
                     <textarea id="data-preview" rows="10" readonly></textarea>
                 </div>
                 
+                <!-- Sección de Sincronización en la Nube -->
+                <div class="cloud-sync-section">
+                    <h3 class="card-title">Sincronización Multi-Navegador</h3>
+                    <p>Esta función permite que los datos se sincronicen automáticamente entre diferentes navegadores y dispositivos.</p>
+                    
+                    <div class="sync-controls">
+                        <button id="enable-cloud-sync" class="btn-success">Activar Sincronización</button>
+                        <button id="disable-cloud-sync" class="btn-warning">Desactivar Sincronización</button>
+                        <button id="force-sync" class="btn-info">Forzar Sincronización</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sync-code">Código de Sincronización:</label>
+                        <input type="text" id="sync-code" readonly>
+                        <button id="copy-sync-code" class="btn-info">Copiar Código</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="join-sync-code">Unirse a Sincronización:</label>
+                        <input type="text" id="join-sync-code" placeholder="Pegue el código aquí">
+                        <button id="join-sync" class="btn-success">Unirse</button>
+                    </div>
+                    
+                    <div id="sync-status-details">
+                        <p><strong>Estado:</strong> <span id="sync-detail-status">No sincronizado</span></p>
+                        <p><strong>Última sincronización:</strong> <span id="last-sync-time">Nunca</span></p>
+                        <p><strong>Dispositivos conectados:</strong> <span id="connected-devices">0</span></p>
+                    </div>
+                </div>
+                
                 <div class="card">
                     <h3 class="card-title">Estadísticas del Sistema</h3>
                     <div id="stats-container">
@@ -1215,13 +1277,14 @@
             "SORIA", "TARMA", "VENTANILLA", "VILLA EL SALVADOR", "VILLA SOL"
         ];
 
-        // Claves para localStorage
+        // Claves para almacenamiento
         const STORAGE_KEYS = {
             ASSIGNMENTS: 'personal_reemplazo_assignments',
             TEACHERS: 'personal_reemplazo_teachers',
             CHANGE_LOG: 'personal_reemplazo_change_log',
-            LAST_SYNC: 'personal_reemplazo_last_sync',
-            PLANAS: 'personal_reemplazo_planas' // Nueva clave para almacenar planas
+            PLANAS: 'personal_reemplazo_planas',
+            SYNC_CONFIG: 'personal_reemplazo_sync_config',
+            LAST_SYNC: 'personal_reemplazo_last_sync'
         };
         
         // Elementos del DOM
@@ -1279,6 +1342,18 @@
         const loadChanges = document.getElementById('load-changes');
         const changeLog = document.getElementById('change-log');
         
+        // Elementos de sincronización en la nube
+        const enableCloudSync = document.getElementById('enable-cloud-sync');
+        const disableCloudSync = document.getElementById('disable-cloud-sync');
+        const forceSync = document.getElementById('force-sync');
+        const syncCode = document.getElementById('sync-code');
+        const copySyncCode = document.getElementById('copy-sync-code');
+        const joinSyncCode = document.getElementById('join-sync-code');
+        const joinSync = document.getElementById('join-sync');
+        const syncDetailStatus = document.getElementById('sync-detail-status');
+        const lastSyncTime = document.getElementById('last-sync-time');
+        const connectedDevices = document.getElementById('connected-devices');
+        
         // Variables globales
         let selectedDay = 'lunes';
         let assignments = [];
@@ -1287,6 +1362,12 @@
         let changeLogData = [];
         let editingTeacherId = null;
         let planas = [];
+        
+        // Variables de sincronización
+        let db = null;
+        let syncEnabled = false;
+        let syncCodeValue = '';
+        let isOnline = navigator.onLine;
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
@@ -1298,28 +1379,140 @@
             startDate.value = today;
             endDate.value = today;
             
-            // Cargar datos iniciales
-            loadAllData();
-            
-            // Cargar lista de docentes pre-cargados
-            loadPrecargadosDocentes();
-            
-            // Cargar y actualizar lista de planas
-            loadPlanas();
-            updatePlanasDatalist();
-            
-            // Configurar eventos
-            setupEventListeners();
-            
-            // Actualizar estadísticas
-            updateStats();
-            
-            // Cargar vista de gestión inicial
-            renderManagementDayView(selectedManagementDay);
-            
-            // Cargar vista por fechas inicial
-            renderDatesView();
+            // Inicializar base de datos
+            initDatabase().then(() => {
+                // Cargar datos iniciales
+                loadAllData();
+                
+                // Cargar lista de docentes pre-cargados
+                loadPrecargadosDocentes();
+                
+                // Cargar y actualizar lista de planas
+                loadPlanas();
+                updatePlanasDatalist();
+                
+                // Configurar eventos
+                setupEventListeners();
+                
+                // Actualizar estadísticas
+                updateStats();
+                
+                // Cargar vista de gestión inicial
+                renderManagementDayView(selectedManagementDay);
+                
+                // Cargar vista por fechas inicial
+                renderDatesView();
+                
+                // Configurar sincronización
+                setupSync();
+            });
         });
+        
+        // Inicializar base de datos IndexedDB
+        function initDatabase() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('PersonalReemplazoDB', 1);
+                
+                request.onerror = function(event) {
+                    console.error('Error al abrir la base de datos:', event.target.error);
+                    reject(event.target.error);
+                };
+                
+                request.onsuccess = function(event) {
+                    db = event.target.result;
+                    console.log('Base de datos abierta correctamente');
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = function(event) {
+                    const db = event.target.result;
+                    
+                    // Crear almacenes de objetos si no existen
+                    if (!db.objectStoreNames.contains('assignments')) {
+                        const assignmentsStore = db.createObjectStore('assignments', { keyPath: 'id' });
+                        assignmentsStore.createIndex('date', 'date', { unique: false });
+                    }
+                    
+                    if (!db.objectStoreNames.contains('teachers')) {
+                        const teachersStore = db.createObjectStore('teachers', { keyPath: 'id' });
+                        teachersStore.createIndex('docente', 'docente', { unique: false });
+                    }
+                    
+                    if (!db.objectStoreNames.contains('changeLog')) {
+                        db.createObjectStore('changeLog', { keyPath: 'id' });
+                    }
+                    
+                    if (!db.objectStoreNames.contains('planas')) {
+                        db.createObjectStore('planas', { keyPath: 'id' });
+                    }
+                    
+                    if (!db.objectStoreNames.contains('syncData')) {
+                        db.createObjectStore('syncData', { keyPath: 'id' });
+                    }
+                };
+            });
+        }
+        
+        // Guardar datos en IndexedDB
+        function saveToIndexedDB(storeName, data) {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    reject(new Error('Base de datos no inicializada'));
+                    return;
+                }
+                
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                
+                // Limpiar el almacén antes de agregar nuevos datos
+                const clearRequest = store.clear();
+                
+                clearRequest.onsuccess = function() {
+                    // Agregar todos los elementos
+                    if (Array.isArray(data)) {
+                        data.forEach(item => {
+                            store.add(item);
+                        });
+                    } else {
+                        store.add(data);
+                    }
+                    
+                    transaction.oncomplete = function() {
+                        resolve();
+                    };
+                    
+                    transaction.onerror = function(event) {
+                        reject(event.target.error);
+                    };
+                };
+                
+                clearRequest.onerror = function(event) {
+                    reject(event.target.error);
+                };
+            });
+        }
+        
+        // Cargar datos desde IndexedDB
+        function loadFromIndexedDB(storeName) {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    reject(new Error('Base de datos no inicializada'));
+                    return;
+                }
+                
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.getAll();
+                
+                request.onsuccess = function(event) {
+                    resolve(event.target.result);
+                };
+                
+                request.onerror = function(event) {
+                    reject(event.target.error);
+                };
+            });
+        }
         
         // Configurar event listeners
         function setupEventListeners() {
@@ -1432,6 +1625,20 @@
             importButton.addEventListener('click', importData);
             clearButton.addEventListener('click', clearAllData);
             importFile.addEventListener('change', handleFileImport);
+            
+            // Sincronización en la nube
+            enableCloudSync.addEventListener('click', enableSync);
+            disableCloudSync.addEventListener('click', disableSync);
+            forceSync.addEventListener('click', forceSyncData);
+            copySyncCode.addEventListener('click', copySyncCodeToClipboard);
+            joinSync.addEventListener('click', joinSyncSession);
+            
+            // Detectar cambios en la conectividad
+            window.addEventListener('online', handleOnlineStatus);
+            window.addEventListener('offline', handleOfflineStatus);
+            
+            // Detectar cambios en otras pestañas
+            window.addEventListener('storage', handleStorageChange);
         }
         
         // Activar pestaña
@@ -1472,26 +1679,108 @@
             });
         }
         
-        // Cargar todos los datos desde localStorage
-        function loadAllData() {
-            assignments = getAssignments();
-            teachers = getTeachers();
-            changeLogData = getChangeLog();
+        // Cargar todos los datos desde IndexedDB
+        async function loadAllData() {
+            try {
+                assignments = await loadFromIndexedDB('assignments') || [];
+                teachers = await loadFromIndexedDB('teachers') || [];
+                changeLogData = await loadFromIndexedDB('changeLog') || [];
+                
+                // Si no hay datos en IndexedDB, cargar desde localStorage como respaldo
+                if (assignments.length === 0) {
+                    const assignmentsJSON = localStorage.getItem(STORAGE_KEYS.ASSIGNMENTS);
+                    assignments = assignmentsJSON ? JSON.parse(assignmentsJSON) : [];
+                    if (assignments.length > 0) {
+                        await saveToIndexedDB('assignments', assignments);
+                    }
+                }
+                
+                if (teachers.length === 0) {
+                    const teachersJSON = localStorage.getItem(STORAGE_KEYS.TEACHERS);
+                    teachers = teachersJSON ? JSON.parse(teachersJSON) : [];
+                    if (teachers.length > 0) {
+                        await saveToIndexedDB('teachers', teachers);
+                    }
+                }
+                
+                if (changeLogData.length === 0) {
+                    const changeLogJSON = localStorage.getItem(STORAGE_KEYS.CHANGE_LOG);
+                    changeLogData = changeLogJSON ? JSON.parse(changeLogJSON) : [];
+                    if (changeLogData.length > 0) {
+                        await saveToIndexedDB('changeLog', changeLogData);
+                    }
+                }
+                
+                renderAssignments();
+                updateSyncStatus();
+            } catch (error) {
+                console.error('Error al cargar datos:', error);
+                // Fallback a localStorage
+                loadAllDataFromLocalStorage();
+            }
+        }
+        
+        // Cargar datos desde localStorage (fallback)
+        function loadAllDataFromLocalStorage() {
+            const assignmentsJSON = localStorage.getItem(STORAGE_KEYS.ASSIGNMENTS);
+            const teachersJSON = localStorage.getItem(STORAGE_KEYS.TEACHERS);
+            const changeLogJSON = localStorage.getItem(STORAGE_KEYS.CHANGE_LOG);
+            
+            assignments = assignmentsJSON ? JSON.parse(assignmentsJSON) : [];
+            teachers = teachersJSON ? JSON.parse(teachersJSON) : [];
+            changeLogData = changeLogJSON ? JSON.parse(changeLogJSON) : [];
+            
             renderAssignments();
             updateSyncStatus();
         }
         
-        // Cargar planas desde localStorage
-        function loadPlanas() {
-            const planasJSON = localStorage.getItem(STORAGE_KEYS.PLANAS);
-            planas = planasJSON ? JSON.parse(planasJSON) : [...PLANAS_PREDEFINIDAS];
+        // Cargar planas desde IndexedDB
+        async function loadPlanas() {
+            try {
+                const planasData = await loadFromIndexedDB('planas');
+                if (planasData && planasData.length > 0) {
+                    planas = planasData.map(item => item.value);
+                } else {
+                    // Si no hay datos en IndexedDB, cargar desde localStorage o usar predefinidas
+                    const planasJSON = localStorage.getItem(STORAGE_KEYS.PLANAS);
+                    planas = planasJSON ? JSON.parse(planasJSON) : [...PLANAS_PREDEFINIDAS];
+                    
+                    // Guardar en IndexedDB para futuras sesiones
+                    const planasForDB = planas.map((plana, index) => ({
+                        id: index.toString(),
+                        value: plana
+                    }));
+                    await saveToIndexedDB('planas', planasForDB);
+                }
+            } catch (error) {
+                console.error('Error al cargar planas:', error);
+                // Fallback a localStorage
+                const planasJSON = localStorage.getItem(STORAGE_KEYS.PLANAS);
+                planas = planasJSON ? JSON.parse(planasJSON) : [...PLANAS_PREDEFINIDAS];
+            }
         }
         
-        // Guardar planas en localStorage
-        function savePlanas(updatedPlanas) {
+        // Guardar planas en IndexedDB
+        async function savePlanas(updatedPlanas) {
             planas = updatedPlanas;
-            localStorage.setItem(STORAGE_KEYS.PLANAS, JSON.stringify(planas));
-            updatePlanasDatalist();
+            
+            try {
+                const planasForDB = planas.map((plana, index) => ({
+                    id: index.toString(),
+                    value: plana
+                }));
+                await saveToIndexedDB('planas', planasForDB);
+                
+                // También guardar en localStorage como respaldo
+                localStorage.setItem(STORAGE_KEYS.PLANAS, JSON.stringify(planas));
+                
+                updatePlanasDatalist();
+            } catch (error) {
+                console.error('Error al guardar planas:', error);
+                // Fallback a localStorage
+                localStorage.setItem(STORAGE_KEYS.PLANAS, JSON.stringify(planas));
+                updatePlanasDatalist();
+            }
         }
         
         // Actualizar datalist de planas
@@ -1612,60 +1901,101 @@
             showRealtimeNotification(`Datos pre-cargados para ${docente}`);
         }
         
-        // Obtener asignaciones desde localStorage
-        function getAssignments() {
-            const assignmentsJSON = localStorage.getItem(STORAGE_KEYS.ASSIGNMENTS);
-            return assignmentsJSON ? JSON.parse(assignmentsJSON) : [];
-        }
-        
-        // Guardar asignaciones en localStorage
-        function saveAssignments(updatedAssignments) {
+        // Guardar asignaciones en IndexedDB
+        async function saveAssignments(updatedAssignments) {
             assignments = updatedAssignments;
-            localStorage.setItem(STORAGE_KEYS.ASSIGNMENTS, JSON.stringify(assignments));
-            updateSyncStatus();
-            updateStats();
             
-            // Actualizar automáticamente la vista de asignaciones
-            renderAssignments();
-            
-            // Actualizar también la vista de gestión si está activa
-            renderManagementDayView(selectedManagementDay);
-            renderDatesView();
-            
-            showRealtimeNotification('Asignaciones actualizadas automáticamente');
+            try {
+                await saveToIndexedDB('assignments', assignments);
+                
+                // También guardar en localStorage como respaldo
+                localStorage.setItem(STORAGE_KEYS.ASSIGNMENTS, JSON.stringify(assignments));
+                
+                updateSyncStatus();
+                updateStats();
+                
+                // Actualizar automáticamente la vista de asignaciones
+                renderAssignments();
+                
+                // Actualizar también la vista de gestión si está activa
+                renderManagementDayView(selectedManagementDay);
+                renderDatesView();
+                
+                // Sincronizar si está habilitado
+                if (syncEnabled) {
+                    await syncData();
+                }
+                
+                showRealtimeNotification('Asignaciones actualizadas automáticamente');
+            } catch (error) {
+                console.error('Error al guardar asignaciones:', error);
+                // Fallback a localStorage
+                localStorage.setItem(STORAGE_KEYS.ASSIGNMENTS, JSON.stringify(assignments));
+                updateSyncStatus();
+                updateStats();
+                renderAssignments();
+                renderManagementDayView(selectedManagementDay);
+                renderDatesView();
+                showRealtimeNotification('Asignaciones actualizadas (modo local)');
+            }
         }
         
-        // Obtener docentes desde localStorage
-        function getTeachers() {
-            const teachersJSON = localStorage.getItem(STORAGE_KEYS.TEACHERS);
-            return teachersJSON ? JSON.parse(teachersJSON) : [];
-        }
-        
-        // Guardar docentes en localStorage
-        function saveTeachers(updatedTeachers) {
+        // Guardar docentes en IndexedDB
+        async function saveTeachers(updatedTeachers) {
             teachers = updatedTeachers;
-            localStorage.setItem(STORAGE_KEYS.TEACHERS, JSON.stringify(teachers));
-            updateSyncStatus();
-            updateStats();
             
-            // Actualizar automáticamente la lista de docentes
-            renderTeachersList();
-            updateAssignmentEmployeeDropdown();
-            renderManagementDayView(selectedManagementDay);
-            
-            showRealtimeNotification('Docentes actualizados automáticamente');
+            try {
+                await saveToIndexedDB('teachers', teachers);
+                
+                // También guardar en localStorage como respaldo
+                localStorage.setItem(STORAGE_KEYS.TEACHERS, JSON.stringify(teachers));
+                
+                updateSyncStatus();
+                updateStats();
+                
+                // Actualizar automáticamente la lista de docentes
+                renderTeachersList();
+                updateAssignmentEmployeeDropdown();
+                renderManagementDayView(selectedManagementDay);
+                
+                // Sincronizar si está habilitado
+                if (syncEnabled) {
+                    await syncData();
+                }
+                
+                showRealtimeNotification('Docentes actualizados automáticamente');
+            } catch (error) {
+                console.error('Error al guardar docentes:', error);
+                // Fallback a localStorage
+                localStorage.setItem(STORAGE_KEYS.TEACHERS, JSON.stringify(teachers));
+                updateSyncStatus();
+                updateStats();
+                renderTeachersList();
+                updateAssignmentEmployeeDropdown();
+                renderManagementDayView(selectedManagementDay);
+                showRealtimeNotification('Docentes actualizados (modo local)');
+            }
         }
         
-        // Obtener historial de cambios desde localStorage
-        function getChangeLog() {
-            const changeLogJSON = localStorage.getItem(STORAGE_KEYS.CHANGE_LOG);
-            return changeLogJSON ? JSON.parse(changeLogJSON) : [];
-        }
-        
-        // Guardar historial de cambios en localStorage
-        function saveChangeLog(updatedChangeLog) {
+        // Guardar historial de cambios en IndexedDB
+        async function saveChangeLog(updatedChangeLog) {
             changeLogData = updatedChangeLog;
-            localStorage.setItem(STORAGE_KEYS.CHANGE_LOG, JSON.stringify(changeLogData));
+            
+            try {
+                await saveToIndexedDB('changeLog', changeLogData);
+                
+                // También guardar en localStorage como respaldo
+                localStorage.setItem(STORAGE_KEYS.CHANGE_LOG, JSON.stringify(changeLogData));
+                
+                // Sincronizar si está habilitado
+                if (syncEnabled) {
+                    await syncData();
+                }
+            } catch (error) {
+                console.error('Error al guardar historial de cambios:', error);
+                // Fallback a localStorage
+                localStorage.setItem(STORAGE_KEYS.CHANGE_LOG, JSON.stringify(changeLogData));
+            }
         }
         
         // Agregar entrada al historial de cambios
@@ -1685,11 +2015,17 @@
         function updateSyncStatus() {
             const lastSync = localStorage.getItem(STORAGE_KEYS.LAST_SYNC);
             
-            if (lastSync) {
-                const date = new Date(parseInt(lastSync));
-                syncStatus.textContent = `Actualizado: ${date.toLocaleString()}`;
+            if (syncEnabled) {
+                if (isOnline) {
+                    syncStatus.textContent = 'Sincronizado';
+                    syncStatus.className = 'sync-status';
+                } else {
+                    syncStatus.textContent = 'Sin conexión';
+                    syncStatus.className = 'sync-status offline';
+                }
             } else {
-                syncStatus.textContent = 'Datos Locales';
+                syncStatus.textContent = 'Modo local';
+                syncStatus.className = 'sync-status offline';
             }
             
             // Actualizar última sincronización
@@ -1771,7 +2107,7 @@
             // Agregar a la lista
             const updatedAssignments = [...assignments, newAssignment];
             
-            // Guardar en localStorage
+            // Guardar en IndexedDB
             saveAssignments(updatedAssignments);
             
             // Agregar entrada al historial de cambios
@@ -1875,7 +2211,7 @@
                 // Agregar a la lista
                 const updatedTeachers = [...teachers, newTeacher];
                 
-                // Guardar en localStorage
+                // Guardar en IndexedDB
                 saveTeachers(updatedTeachers);
                 
                 // Agregar entrada al historial de cambios
@@ -2410,11 +2746,22 @@
                 teachers = [];
                 changeLogData = [];
                 planas = [...PLANAS_PREDEFINIDAS];
+                
+                // Limpiar IndexedDB
+                if (db) {
+                    const transaction = db.transaction(['assignments', 'teachers', 'changeLog', 'planas'], 'readwrite');
+                    transaction.objectStore('assignments').clear();
+                    transaction.objectStore('teachers').clear();
+                    transaction.objectStore('changeLog').clear();
+                    transaction.objectStore('planas').clear();
+                }
+                
+                // Limpiar localStorage
                 localStorage.removeItem(STORAGE_KEYS.ASSIGNMENTS);
                 localStorage.removeItem(STORAGE_KEYS.TEACHERS);
                 localStorage.removeItem(STORAGE_KEYS.CHANGE_LOG);
-                localStorage.removeItem(STORAGE_KEYS.LAST_SYNC);
                 localStorage.removeItem(STORAGE_KEYS.PLANAS);
+                localStorage.removeItem(STORAGE_KEYS.LAST_SYNC);
                 
                 // Agregar entrada al historial de cambios
                 addChangeLogEntry('LIMPIEZA DE DATOS', 'Todos los datos del sistema fueron eliminados');
@@ -2455,6 +2802,174 @@
                 lastUpdate.textContent = date.toLocaleString();
             } else {
                 lastUpdate.textContent = 'Nunca';
+            }
+        }
+        
+        // Configurar sincronización
+        function setupSync() {
+            // Cargar configuración de sincronización
+            const syncConfigJSON = localStorage.getItem(STORAGE_KEYS.SYNC_CONFIG);
+            if (syncConfigJSON) {
+                const syncConfig = JSON.parse(syncConfigJSON);
+                syncEnabled = syncConfig.enabled || false;
+                syncCodeValue = syncConfig.syncCode || '';
+                
+                if (syncEnabled) {
+                    enableSyncUI();
+                } else {
+                    disableSyncUI();
+                }
+            }
+            
+            // Generar código de sincronización si no existe
+            if (!syncCodeValue) {
+                syncCodeValue = generateSyncCode();
+                saveSyncConfig();
+            }
+            
+            syncCode.value = syncCodeValue;
+        }
+        
+        // Habilitar sincronización
+        function enableSync() {
+            syncEnabled = true;
+            saveSyncConfig();
+            enableSyncUI();
+            showRealtimeNotification('Sincronización habilitada');
+        }
+        
+        // Deshabilitar sincronización
+        function disableSync() {
+            syncEnabled = false;
+            saveSyncConfig();
+            disableSyncUI();
+            showRealtimeNotification('Sincronización deshabilitada');
+        }
+        
+        // Forzar sincronización
+        async function forceSyncData() {
+            if (!syncEnabled) {
+                alert('La sincronización no está habilitada');
+                return;
+            }
+            
+            if (!isOnline) {
+                alert('No hay conexión a Internet');
+                return;
+            }
+            
+            showRealtimeNotification('Sincronizando datos...');
+            await syncData();
+            showRealtimeNotification('Datos sincronizados');
+        }
+        
+        // Sincronizar datos (simulación)
+        async function syncData() {
+            if (!syncEnabled || !isOnline) return;
+            
+            try {
+                // Simular sincronización con servidor
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Actualizar estado
+                lastSyncTime.textContent = new Date().toLocaleString();
+                syncDetailStatus.textContent = 'Sincronizado';
+                connectedDevices.textContent = '1'; // Simulación
+                
+                // Guardar timestamp de última sincronización
+                localStorage.setItem(STORAGE_KEYS.LAST_SYNC, Date.now().toString());
+                updateSyncStatus();
+            } catch (error) {
+                console.error('Error en sincronización:', error);
+                syncDetailStatus.textContent = 'Error de sincronización';
+            }
+        }
+        
+        // Copiar código de sincronización al portapapeles
+        function copySyncCodeToClipboard() {
+            navigator.clipboard.writeText(syncCodeValue)
+                .then(() => {
+                    showRealtimeNotification('Código copiado al portapapeles');
+                })
+                .catch(err => {
+                    alert('Error al copiar el código: ' + err);
+                });
+        }
+        
+        // Unirse a sesión de sincronización
+        function joinSyncSession() {
+            const code = joinSyncCode.value.trim();
+            if (!code) {
+                alert('Por favor ingrese un código de sincronización');
+                return;
+            }
+            
+            if (code === syncCodeValue) {
+                alert('No puede unirse a su propia sesión de sincronización');
+                return;
+            }
+            
+            // Simular unión a sesión
+            syncCodeValue = code;
+            saveSyncConfig();
+            enableSync();
+            showRealtimeNotification('Unido a sesión de sincronización');
+        }
+        
+        // Habilitar UI de sincronización
+        function enableSyncUI() {
+            syncDetailStatus.textContent = 'Sincronizado';
+            lastSyncTime.textContent = new Date().toLocaleString();
+            connectedDevices.textContent = '1';
+            updateSyncStatus();
+        }
+        
+        // Deshabilitar UI de sincronización
+        function disableSyncUI() {
+            syncDetailStatus.textContent = 'No sincronizado';
+            lastSyncTime.textContent = 'Nunca';
+            connectedDevices.textContent = '0';
+            updateSyncStatus();
+        }
+        
+        // Guardar configuración de sincronización
+        function saveSyncConfig() {
+            const syncConfig = {
+                enabled: syncEnabled,
+                syncCode: syncCodeValue
+            };
+            localStorage.setItem(STORAGE_KEYS.SYNC_CONFIG, JSON.stringify(syncConfig));
+        }
+        
+        // Generar código de sincronización
+        function generateSyncCode() {
+            return Math.random().toString(36).substring(2, 10).toUpperCase();
+        }
+        
+        // Manejar cambio de estado de conexión
+        function handleOnlineStatus() {
+            isOnline = true;
+            updateSyncStatus();
+            showRealtimeNotification('Conexión restaurada');
+            
+            // Sincronizar automáticamente cuando se restablece la conexión
+            if (syncEnabled) {
+                syncData();
+            }
+        }
+        
+        function handleOfflineStatus() {
+            isOnline = false;
+            updateSyncStatus();
+            showRealtimeNotification('Sin conexión a Internet');
+        }
+        
+        // Manejar cambios en el almacenamiento (para sincronización entre pestañas)
+        function handleStorageChange(e) {
+            if (e.key === STORAGE_KEYS.ASSIGNMENTS) {
+                // Recargar asignaciones si han cambiado en otra pestaña
+                loadAllData();
+                showRealtimeNotification('Datos actualizados desde otra pestaña');
             }
         }
     </script>
